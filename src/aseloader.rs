@@ -1,5 +1,5 @@
 use crate::animate::{Animation, AnimationInfo, Frame, Sprite};
-use asefile::AsepriteFile;
+use asefile::{AsepriteFile, Tag};
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
     prelude::*,
@@ -180,48 +180,17 @@ fn create_animations(ases: Vec<(PathBuf, AsepriteFile)>) -> ProcessedAse<Texture
     let mut tmp_anim_info: Vec<TempAnimInfo> = Vec::new();
     for (name, ase) in &ases {
         debug!("Processing Aseprite file: {}", name.display());
-        let first_sprite = tmp_sprites.len();
+        let sprite_offset = tmp_sprites.len();
 
         for frame in 0..ase.num_frames() {
-            let img = ase.frame(frame).image();
-            let size = Extent3d {
-                width: ase.width() as u32,
-                height: ase.height() as u32,
-                depth: 1,
-            };
-            let texture = Texture::new_fill(
-                size,
-                TextureDimension::D2,
-                img.as_raw(),
-                TextureFormat::Rgba8UnormSrgb,
-            );
-            //let texture = textures.get(&tex_handle).unwrap();
-            //texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
-            tmp_sprites.push(TempSpriteInfo {
-                // file: ase.name.clone(),
-                frame,
-                tex: texture,
-                duration: ase.frame(frame).duration(),
-            })
+            tmp_sprites.push(TempSpriteInfo::<Texture>::new(ase, frame));
         }
 
-        tmp_anim_info.push(TempAnimInfo {
-            file: name.clone(),
-            tag: None,
-            sprites: (0..ase.num_frames())
-                .map(|f| first_sprite + f as usize)
-                .collect(),
-        });
+        tmp_anim_info.push(TempAnimInfo::new(name, ase, sprite_offset));
 
         for tag_id in 0..ase.num_tags() {
             let tag = ase.tag(tag_id);
-            tmp_anim_info.push(TempAnimInfo {
-                file: name.clone(),
-                tag: Some(tag.name().to_owned()),
-                sprites: (tag.from_frame()..tag.to_frame() + 1)
-                    .map(|f| first_sprite + f as usize)
-                    .collect(),
-            });
+            tmp_anim_info.push(TempAnimInfo::from_tag(name, sprite_offset, tag));
         }
     }
     ProcessedAse {
@@ -297,12 +266,53 @@ struct TempSpriteInfo<T> {
     tex: T,
     duration: u32,
 }
+impl TempSpriteInfo<Texture> {
+    fn new(ase: &AsepriteFile, frame: u32) -> Self {
+        let img = ase.frame(frame).image();
+        let size = Extent3d {
+            width: ase.width() as u32,
+            height: ase.height() as u32,
+            depth: 1,
+        };
+        let texture = Texture::new_fill(
+            size,
+            TextureDimension::D2,
+            img.as_raw(),
+            TextureFormat::Rgba8UnormSrgb,
+        );
+        Self {
+            frame,
+            tex: texture,
+            duration: ase.frame(frame).duration(),
+        }
+    }
+}
 
 #[derive(Debug)]
 struct TempAnimInfo {
     file: PathBuf,
     tag: Option<String>,
     sprites: Vec<usize>,
+}
+impl TempAnimInfo {
+    fn new(name: &PathBuf, ase: &AsepriteFile, sprite_offset: usize) -> Self {
+        Self {
+            file: name.clone(),
+            tag: None,
+            sprites: (0..ase.num_frames())
+                .map(|f| sprite_offset + f as usize)
+                .collect(),
+        }
+    }
+    fn from_tag(name: &PathBuf, sprite_offset: usize, tag: &Tag) -> Self {
+        TempAnimInfo {
+            file: name.clone(),
+            tag: Some(tag.name().to_owned()),
+            sprites: (tag.from_frame()..tag.to_frame() + 1)
+                .map(|f| sprite_offset + f as usize)
+                .collect(),
+        }
+    }
 }
 
 pub fn aseprite_loader(
