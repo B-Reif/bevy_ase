@@ -13,7 +13,7 @@ use bevy::sprite::TextureAtlasBuilder;
 use std::time::Instant;
 use std::{collections::HashMap, path::PathBuf};
 
-pub(crate) struct TilesetsByKey<T>(HashMap<TilesetKey, TilesetData<T>>);
+pub(crate) struct TilesetsByKey<T>(pub HashMap<TilesetKey, TilesetData<T>>);
 impl TilesetsByKey<Texture> {
     fn new() -> Self {
         Self(HashMap::new())
