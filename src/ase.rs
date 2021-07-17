@@ -27,9 +27,6 @@ pub(crate) struct AseKeyed {
 
 pub(crate) struct AsesById(HashMap<AseId, AseKeyed>);
 impl AsesById {
-    pub(crate) fn inner(&self) -> &HashMap<AseId, AseKeyed> {
-        &self.0
-    }
     pub fn iter(&self) -> std::collections::hash_map::Iter<'_, AseId, AseKeyed> {
         self.0.iter()
     }

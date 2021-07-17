@@ -2,12 +2,12 @@ use asefile::{AsepriteFile, Tag};
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub(crate) struct Animation {
+pub(crate) struct AnimationData {
     pub(crate) file: PathBuf,
     pub(crate) tag: Option<String>,
     pub(crate) sprites: Vec<usize>,
 }
-impl Animation {
+impl AnimationData {
     pub(crate) fn new(name: &PathBuf, ase: &AsepriteFile, sprite_offset: usize) -> Self {
         Self {
             file: name.clone(),
@@ -18,7 +18,7 @@ impl Animation {
         }
     }
     pub(crate) fn from_tag(name: &PathBuf, sprite_offset: usize, tag: &Tag) -> Self {
-        Animation {
+        AnimationData {
             file: name.clone(),
             tag: Some(tag.name().to_owned()),
             sprites: (tag.from_frame()..tag.to_frame() + 1)

@@ -15,5 +15,5 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
-
-pub use tileset::{TileSize, Tileset, TilesetId};
+pub use ase::AseId;
+pub use tileset::{TileSize, Tileset, TilesetId, TilesetKey};

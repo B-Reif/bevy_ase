@@ -1,14 +1,12 @@
-use crate::animate::{Animation, AnimationInfo, Frame, Sprite};
+use crate::animate::{Animation, AnimationInfo};
 use crate::processing;
-use asefile::{AsepriteFile, Tag, Tileset, TilesetId};
+use crate::tileset::Tileset;
+use asefile::AsepriteFile;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
-    render::texture::{Extent3d, TextureDimension, TextureFormat},
-    sprite::TextureAtlasBuilder,
     tasks::AsyncComputeTaskPool,
-    utils::Instant,
 };
 use std::{
     path::PathBuf,
@@ -23,6 +21,7 @@ pub struct AsepriteLoaderPlugin;
 impl Plugin for AsepriteLoaderPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<AsepriteLoader>()
+            .add_asset::<Tileset>()
             .add_asset::<AsepriteAsset>()
             .init_asset_loader::<AsepriteAssetLoader>()
             .add_system(aseprite_loader.system());
@@ -70,7 +69,7 @@ impl AssetLoader for AsepriteAssetLoader {
 // #[derive(Debug)]
 pub struct AsepriteLoader {
     todo_handles: Vec<Handle<AsepriteAsset>>,
-    done: Arc<Mutex<Vec<processing::AseAssets<Texture>>>>,
+    done: Arc<Mutex<Vec<processing::AseAssets>>>,
     in_progress: Arc<AtomicU32>,
 }
 
@@ -129,7 +128,7 @@ impl AsepriteLoader {
 
         let output = self.done.clone();
         let task = pool.spawn(async move {
-            let processed = processing::AseAssets::<Texture>::new(inputs);
+            let processed = processing::AseAssets::new(inputs);
             let mut out = output.lock().unwrap();
             out.push(processed);
         });
@@ -142,6 +141,7 @@ impl AsepriteLoader {
         anim_info: &mut AnimationInfo,
         textures: &mut Assets<Texture>,
         atlases: &mut Assets<TextureAtlas>,
+        tilesets: &mut Assets<Tileset>,
     ) {
         let results = {
             let mut lock = self.done.try_lock();
@@ -157,7 +157,7 @@ impl AsepriteLoader {
             return;
         }
         for r in results {
-            finish_animations(r, animations, anim_info, textures, atlases);
+            r.move_into_bevy(animations, anim_info, textures, atlases, tilesets);
             self.in_progress.fetch_sub(1, Ordering::SeqCst);
         }
     }
@@ -171,61 +171,6 @@ impl AsepriteLoader {
     }
 }
 
-fn finish_animations(
-    input: processing::AseAssets<Texture>,
-    animations: &mut Assets<Animation>,
-    anim_info: &mut AnimationInfo,
-    textures: &mut Assets<Texture>,
-    atlases: &mut Assets<TextureAtlas>,
-) {
-    let mut texture_atlas_builder = TextureAtlasBuilder::default();
-
-    let start = Instant::now();
-    let tmp_sprites: Vec<processing::Sprite<Handle<Texture>>> = input
-        .sprites
-        .into_iter()
-        .map(
-            |processing::Sprite {
-                 frame,
-                 texture: tex,
-                 duration,
-             }| {
-                let tex_handle = textures.add(tex);
-                let texture = textures.get(&tex_handle).unwrap();
-                texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
-                processing::Sprite {
-                    texture: tex_handle,
-                    frame,
-                    duration,
-                }
-            },
-        )
-        .collect();
-    let atlas = texture_atlas_builder
-        .finish(textures)
-        .expect("Creating texture atlas failed");
-    let atlas_handle = atlases.add(atlas);
-    let atlas = atlases.get(&atlas_handle).unwrap();
-    debug!("Creating atlas took: {}", start.elapsed().as_secs_f32());
-
-    for tmp_anim in input.anims {
-        let mut frames = Vec::with_capacity(tmp_anim.sprites.len());
-        for sprite_id in tmp_anim.sprites {
-            let tmp_sprite = &tmp_sprites[sprite_id];
-            let atlas_index = atlas.get_texture_index(&tmp_sprite.texture).unwrap();
-            frames.push(Frame {
-                sprite: Sprite {
-                    atlas: atlas_handle.clone(),
-                    atlas_index: atlas_index as u32,
-                },
-                duration_ms: tmp_sprite.duration,
-            });
-        }
-        let handle = animations.add(Animation::new(frames));
-        anim_info.add_anim(tmp_anim.file, tmp_anim.tag, handle);
-    }
-}
-
 pub fn aseprite_loader(
     mut loader: ResMut<AsepriteLoader>,
     task_pool: ResMut<AsyncComputeTaskPool>,
@@ -235,6 +180,7 @@ pub fn aseprite_loader(
     mut atlases: ResMut<Assets<TextureAtlas>>,
     mut animations: ResMut<Assets<Animation>>,
     mut anim_info: ResMut<AnimationInfo>,
+    mut tilesets: ResMut<Assets<Tileset>>,
 ) {
     let pending = loader.check_pending();
     if pending > 0 {
@@ -243,5 +189,11 @@ pub fn aseprite_loader(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
-    loader.process_finished(&mut animations, &mut anim_info, &mut textures, &mut atlases);
+    loader.process_finished(
+        &mut animations,
+        &mut anim_info,
+        &mut textures,
+        &mut atlases,
+        &mut tilesets,
+    );
 }
