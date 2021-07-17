@@ -1,14 +1,14 @@
 [package]
-name = "bevy_proto_aseprite"
+name = "bevy_asefile"
 version = "0.1.0"
-authors = ["alpine_alpaca <alpine.alpaca.games@gmail.com>"]
+authors = ["alpine_alpaca <alpine.alpaca.games@gmail.com>", "B-Reif"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 bevy = "0.5"
-asefile = "0.2"
+asefile = { git = "https://github.com/B-Reif/asefile", branch = "main" }
 anyhow = "1.0"
 
 [dev-dependencies]

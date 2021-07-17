@@ -1,4 +1,4 @@
-use bevy_proto_aseprite::anim_id::AnimationId;
+use bevy_asefile::anim_id::AnimationId;
 use strum::{EnumIter, EnumProperty, IntoEnumIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumProperty, EnumIter)]

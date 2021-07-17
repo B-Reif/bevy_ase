@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
-use bevy_proto_aseprite::{
+use bevy_asefile::{
     self,
     anim_id::{AnimationById, AnimationId},
     animate::{self, Animation, AnimationInfo},
@@ -65,7 +65,7 @@ pub fn spawn_sprites(mut commands: Commands, anim_ids: Res<AnimationById<AnimId>
     //commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle({
         let mut b = OrthographicCameraBundle::new_2d();
-        b.orthographic_projection.scale = 1.0 / 3.0;   // scale to 3x
+        b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
         b
     });
 

@@ -1,4 +1,4 @@
-Basic tooling to use Aseprite animations with Bevy.
+Basic tooling to use Aseprite animations with Bevy. Forked from bevy_proto_aseprite.
 
 # Example
 
