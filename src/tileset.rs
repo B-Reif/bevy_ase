@@ -82,16 +82,13 @@ impl fmt::Display for TilesetId {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TilesetKey {
+pub struct TilesetAseKey {
     ase_id: AseId,
     tileset_id: TilesetId,
 }
-impl TilesetKey {
-    pub fn new(ase_id: &AseId, tileset_id: &TilesetId) -> Self {
-        Self {
-            ase_id: *ase_id,
-            tileset_id: *tileset_id,
-        }
+impl TilesetAseKey {
+    pub fn new(ase_id: AseId, tileset_id: TilesetId) -> Self {
+        Self { ase_id, tileset_id }
     }
     pub fn ase_id(&self) -> &AseId {
         &self.ase_id
@@ -100,13 +97,9 @@ impl TilesetKey {
         &self.tileset_id
     }
 }
-impl fmt::Display for TilesetKey {
+impl fmt::Display for TilesetAseKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "TilesetKey(ase_id {}, tileset_id {})",
-            self.ase_id, self.tileset_id
-        )
+        write!(f, "TilesetKey({}, {})", self.ase_id, self.tileset_id)
     }
 }
 
@@ -134,7 +127,7 @@ impl TileSize {
 #[derive(Debug, TypeUuid)]
 #[uuid = "0e2dbd05-dbad-46c9-a943-395f83dfa4ba"]
 pub struct Tileset {
-    pub key: TilesetKey,
+    pub key: TilesetAseKey,
     pub tile_count: u32,
     pub tile_size: TileSize,
     pub name: String,
@@ -188,7 +181,7 @@ impl TilesetData<Texture> {
         } = self;
         let tex_handle = textures.add(texture);
         let tileset = Tileset {
-            key: TilesetKey::new(ase_id, &id),
+            key: TilesetAseKey::new(*ase_id, id),
             name,
             texture: tex_handle,
             tile_count,

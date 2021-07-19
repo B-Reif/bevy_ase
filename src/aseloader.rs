@@ -1,5 +1,5 @@
 use crate::animate::{Animation, AnimationInfo};
-use crate::processing;
+use crate::processing::{self};
 use crate::tileset::Tileset;
 use asefile::AsepriteFile;
 use bevy::{
@@ -8,6 +8,7 @@ use bevy::{
     reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
 };
+use std::ops::DerefMut;
 use std::{
     path::PathBuf,
     sync::{
@@ -111,7 +112,9 @@ impl AsepriteLoader {
 
         let mut inputs: Vec<(PathBuf, AsepriteFile)> = Vec::with_capacity(handles.len());
         for h in &handles {
-            let ase_asset = aseprites.get_mut(h.clone_weak()).unwrap();
+            let ase_asset = aseprites
+                .get_mut(h.clone_weak())
+                .expect("Failed to get aseprite from handle");
 
             // We actually remove the AsepriteFile from the AsepriteAsset so
             // the memory can be freed after we're done processing. If the file
@@ -129,20 +132,13 @@ impl AsepriteLoader {
         let output = self.done.clone();
         let task = pool.spawn(async move {
             let processed = processing::AseAssets::new(inputs);
-            let mut out = output.lock().unwrap();
+            let mut out = output.lock().expect("Failed to get lock");
             out.push(processed);
         });
         task.detach();
     }
 
-    fn process_finished(
-        &mut self,
-        animations: &mut Assets<Animation>,
-        anim_info: &mut AnimationInfo,
-        textures: &mut Assets<Texture>,
-        atlases: &mut Assets<TextureAtlas>,
-        tilesets: &mut Assets<Tileset>,
-    ) {
+    fn process_finished(&mut self, mut resources: AseAssetResources) {
         let results = {
             let mut lock = self.done.try_lock();
             if let Ok(ref mut data) = lock {
@@ -157,7 +153,7 @@ impl AsepriteLoader {
             return;
         }
         for r in results {
-            r.move_into_bevy(animations, anim_info, textures, atlases, tilesets);
+            r.move_into_bevy(&mut resources);
             self.in_progress.fetch_sub(1, Ordering::SeqCst);
         }
     }
@@ -171,6 +167,14 @@ impl AsepriteLoader {
     }
 }
 
+pub(crate) struct AseAssetResources<'a> {
+    pub animations: Option<&'a mut Assets<Animation>>,
+    pub anim_info: Option<&'a mut AnimationInfo>,
+    pub textures: &'a mut Assets<Texture>,
+    pub atlases: &'a mut Assets<TextureAtlas>,
+    pub tilesets: &'a mut Assets<Tileset>,
+}
+
 pub fn aseprite_loader(
     mut loader: ResMut<AsepriteLoader>,
     task_pool: ResMut<AsyncComputeTaskPool>,
@@ -178,8 +182,8 @@ pub fn aseprite_loader(
     asset_server: Res<AssetServer>,
     mut textures: ResMut<Assets<Texture>>,
     mut atlases: ResMut<Assets<TextureAtlas>>,
-    mut animations: ResMut<Assets<Animation>>,
-    mut anim_info: ResMut<AnimationInfo>,
+    mut animations: Option<ResMut<Assets<Animation>>>,
+    mut anim_info: Option<ResMut<AnimationInfo>>,
     mut tilesets: ResMut<Assets<Tileset>>,
 ) {
     let pending = loader.check_pending();
@@ -189,11 +193,14 @@ pub fn aseprite_loader(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
-    loader.process_finished(
-        &mut animations,
-        &mut anim_info,
-        &mut textures,
-        &mut atlases,
-        &mut tilesets,
-    );
+    let animations = animations.as_mut().map(DerefMut::deref_mut);
+    let anim_info = anim_info.as_mut().map(DerefMut::deref_mut);
+    let resources = AseAssetResources {
+        anim_info,
+        animations,
+        textures: &mut textures,
+        atlases: &mut atlases,
+        tilesets: &mut tilesets,
+    };
+    loader.process_finished(resources);
 }

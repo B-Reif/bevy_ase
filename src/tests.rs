@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use asefile::AsepriteFile;
 
-use crate::processing;
+use crate::processing::{self, AseAssets};
 
 fn test_path(name: &str) -> PathBuf {
     let mut path = PathBuf::new();
@@ -17,13 +17,17 @@ fn load_test_file(path: &PathBuf) -> AsepriteFile {
     AsepriteFile::read_file(path).unwrap()
 }
 
-#[test]
-fn tileset_file() {
-    let path = test_path("tileset");
+fn load_test_file_as_assets(name: &str) -> AseAssets {
+    let path = test_path(name);
     let ase = load_test_file(&path);
     let mut inputs = Vec::new();
     inputs.push((path, ase));
-    let assets = processing::AseAssets::new(inputs);
+    processing::AseAssets::new(inputs)
+}
+
+#[test]
+fn tileset_file() {
+    let assets = load_test_file_as_assets("tileset");
     let tilesets = assets.tilesets.0;
     assert_eq!(tilesets.len(), 1);
 }

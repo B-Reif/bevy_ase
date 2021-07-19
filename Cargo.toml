@@ -13,6 +13,7 @@ anyhow = "1.0"
 
 [dev-dependencies]
 strum = { version = "0.20", features = ["derive"] }
+bevy_ecs_tilemap = "0.4"
 
 [profile.dev.package."*"]
 opt-level = 2
