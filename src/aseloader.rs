@@ -90,13 +90,8 @@ impl AsepriteLoader {
     }
 
     fn all_todo_handles_ready(&self, asset_server: &AssetServer) -> bool {
-        if let LoadState::Loaded =
-            asset_server.get_group_load_state(self.todo_handles.iter().map(|handle| handle.id))
-        {
-            true
-        } else {
-            false
-        }
+        let handles = self.todo_handles.iter().map(|h| h.id);
+        asset_server.get_group_load_state(handles) == LoadState::Loaded
     }
 
     fn spawn_tasks(&mut self, pool: &AsyncComputeTaskPool, aseprites: &mut Assets<AsepriteAsset>) {
@@ -110,7 +105,7 @@ impl AsepriteLoader {
         let mut handles = Vec::new();
         std::mem::swap(&mut handles, &mut self.todo_handles);
 
-        let mut inputs: Vec<(PathBuf, AsepriteFile)> = Vec::with_capacity(handles.len());
+        let mut ase_files: Vec<(PathBuf, AsepriteFile)> = Vec::with_capacity(handles.len());
         for h in &handles {
             let ase_asset = aseprites
                 .get_mut(h.clone_weak())
@@ -125,20 +120,20 @@ impl AsepriteLoader {
             std::mem::swap(&mut ase_asset.data, &mut loaded_ase);
 
             if let LoadedAsepriteFile::Loaded(ase) = loaded_ase {
-                inputs.push((ase_asset.name.clone(), ase));
+                ase_files.push((ase_asset.name.clone(), ase));
             }
         }
 
         let output = self.done.clone();
         let task = pool.spawn(async move {
-            let processed = processing::AseAssets::new(inputs);
+            let processed = processing::AseAssets::new(ase_files);
             let mut out = output.lock().expect("Failed to get lock");
             out.push(processed);
         });
         task.detach();
     }
 
-    fn process_finished(&mut self, mut resources: AseAssetResources) {
+    fn move_finished_into_resources(&mut self, mut resources: AseAssetResources) {
         let results = {
             let mut lock = self.done.try_lock();
             if let Ok(ref mut data) = lock {
@@ -153,7 +148,7 @@ impl AsepriteLoader {
             return;
         }
         for r in results {
-            r.move_into_bevy(&mut resources);
+            r.move_into_resources(&mut resources);
             self.in_progress.fetch_sub(1, Ordering::SeqCst);
         }
     }
@@ -170,9 +165,9 @@ impl AsepriteLoader {
 pub(crate) struct AseAssetResources<'a> {
     pub animations: Option<&'a mut Assets<Animation>>,
     pub anim_info: Option<&'a mut AnimationInfo>,
-    pub textures: &'a mut Assets<Texture>,
-    pub atlases: &'a mut Assets<TextureAtlas>,
-    pub tilesets: &'a mut Assets<Tileset>,
+    pub textures: Option<&'a mut Assets<Texture>>,
+    pub atlases: Option<&'a mut Assets<TextureAtlas>>,
+    pub tilesets: Option<&'a mut Assets<Tileset>>,
 }
 
 pub fn aseprite_loader(
@@ -180,11 +175,11 @@ pub fn aseprite_loader(
     task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AsepriteAsset>>,
     asset_server: Res<AssetServer>,
-    mut textures: ResMut<Assets<Texture>>,
-    mut atlases: ResMut<Assets<TextureAtlas>>,
+    mut textures: Option<ResMut<Assets<Texture>>>,
+    mut atlases: Option<ResMut<Assets<TextureAtlas>>>,
     mut animations: Option<ResMut<Assets<Animation>>>,
     mut anim_info: Option<ResMut<AnimationInfo>>,
-    mut tilesets: ResMut<Assets<Tileset>>,
+    mut tilesets: Option<ResMut<Assets<Tileset>>>,
 ) {
     let pending = loader.check_pending();
     if pending > 0 {
@@ -193,14 +188,17 @@ pub fn aseprite_loader(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
+    let textures = textures.as_mut().map(DerefMut::deref_mut);
+    let atlases = atlases.as_mut().map(DerefMut::deref_mut);
     let animations = animations.as_mut().map(DerefMut::deref_mut);
     let anim_info = anim_info.as_mut().map(DerefMut::deref_mut);
+    let tilesets = tilesets.as_mut().map(DerefMut::deref_mut);
     let resources = AseAssetResources {
-        anim_info,
         animations,
-        textures: &mut textures,
-        atlases: &mut atlases,
-        tilesets: &mut tilesets,
+        anim_info,
+        textures,
+        atlases,
+        tilesets,
     };
-    loader.process_finished(resources);
+    loader.move_finished_into_resources(resources);
 }

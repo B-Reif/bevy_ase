@@ -20,6 +20,7 @@ fn main() {
         .add_system_set(
             SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites.system()),
         )
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera.system()))
         .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles.system()))
         .run()
 }
@@ -49,48 +50,56 @@ pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<
     }
 }
 
+fn layer_settings_from(map_size: UVec2, chunk_size: UVec2, tileset: &Tileset) -> LayerSettings {
+    let Tileset {
+        tile_count,
+        tile_size,
+        ..
+    } = tileset;
+    let tile_size = Vec2::new((*tile_size.width()).into(), (*tile_size.height()).into());
+    let tile_count = *tile_count as f32;
+    let texture_size = Vec2::new(tile_size.x, tile_size.y * tile_count);
+    LayerSettings::new(map_size, chunk_size, tile_size, texture_size)
+}
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn_bundle({
+        let mut b = OrthographicCameraBundle::new_2d();
+        b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
+        b
+    });
+}
+
+fn set_tiles(layer_builder: &mut LayerBuilder<TileBundle>) {
+    for y in 0..3 {
+        let y_offset = 7 - (y * 3);
+        for x in 0..3 {
+            let texture_index = y_offset + x;
+            let tile = Tile {
+                texture_index,
+                ..Tile::default()
+            };
+            let tile_pos = UVec2::new(x as u32, y as u32);
+            layer_builder.set_tile(tile_pos, tile.into()).unwrap();
+        }
+    }
+}
+
 fn spawn_tiles(
     mut commands: Commands,
     tilesets: Res<Assets<Tileset>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map_query: MapQuery,
 ) {
-    commands.spawn_bundle({
-        let mut b = OrthographicCameraBundle::new_2d();
-        b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
-        b
-    });
-
     for (_, tileset) in tilesets.iter() {
-        let Tileset {
-            tile_count,
-            tile_size,
-            texture,
-            ..
-        } = tileset;
-        let tile_size = Vec2::new((*tile_size.width()).into(), (*tile_size.height()).into());
-        let tile_count = *tile_count as f32;
-        let texture_size = Vec2::new(tile_size.x, tile_size.y * tile_count);
-        let texture_handle = texture.clone();
+        let texture_handle = tileset.texture.clone();
         let material_handle = materials.add(ColorMaterial::texture(texture_handle));
+        let settings = layer_settings_from(UVec2::new(3, 3), UVec2::new(3, 3), tileset);
 
-        let (mut layer_builder, layer_entity) = LayerBuilder::<TileBundle>::new(
-            &mut commands,
-            LayerSettings::new(UVec2::new(3, 3), UVec2::new(3, 3), tile_size, texture_size),
-            0u16,
-            0u16,
-        );
-        for x in 0..=2 {
-            for y in 0..=2 {
-                let tile_pos = UVec2::new(x, y);
-                let texture_index = (7 - (y * 3)) + x;
-                let tile = Tile {
-                    texture_index: texture_index as u16,
-                    ..Tile::default()
-                };
-                layer_builder.set_tile(tile_pos, tile.into()).unwrap();
-            }
-        }
+        let (mut layer_builder, layer_entity) =
+            LayerBuilder::<TileBundle>::new(&mut commands, settings, 0u16, 0u16);
+
+        set_tiles(&mut layer_builder);
 
         map_query.build_layer(&mut commands, layer_builder, material_handle);
 

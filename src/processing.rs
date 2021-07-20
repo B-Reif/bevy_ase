@@ -1,5 +1,6 @@
 use crate::animate::Frame;
 use crate::aseloader::AseAssetResources;
+use crate::Tileset;
 
 use crate::{
     animate::Animation,
@@ -11,7 +12,6 @@ use crate::{
 use asefile::AsepriteFile;
 use bevy::prelude::*;
 use bevy::sprite::TextureAtlasBuilder;
-use std::time::Instant;
 use std::{collections::HashMap, path::PathBuf};
 
 pub(crate) struct TilesetsByKey<T>(pub HashMap<TilesetAseKey, TilesetData<T>>);
@@ -40,6 +40,51 @@ impl TilesetsByKey<Texture> {
     ) -> std::collections::hash_map::IntoIter<TilesetAseKey, TilesetData<Texture>> {
         self.0.into_iter()
     }
+}
+
+fn move_tilesets(
+    tilesets_by_key: TilesetsByKey<Texture>,
+    textures: &mut Assets<Texture>,
+    tilesets: &mut Assets<Tileset>,
+) {
+    for (key, ts) in tilesets_by_key.into_iter() {
+        let ase_id = key.ase_id();
+        ts.move_into_bevy(ase_id, textures, tilesets);
+    }
+}
+
+fn move_sprites(
+    sprites: Vec<Sprite<Texture>>,
+    textures: &mut Assets<Texture>,
+    atlases: &mut Assets<TextureAtlas>,
+) -> (Vec<Sprite<Handle<Texture>>>, Handle<TextureAtlas>) {
+    let mut texture_atlas_builder = TextureAtlasBuilder::default();
+    let sprite_handles: Vec<crate::sprite::Sprite<Handle<Texture>>> = sprites
+        .into_iter()
+        .map(
+            |crate::sprite::Sprite {
+                 frame,
+                 texture: tex,
+                 duration,
+             }| {
+                let tex_handle = textures.add(tex);
+                let texture = textures
+                    .get(&tex_handle)
+                    .expect("Failed to get texture from handle");
+                texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
+                crate::sprite::Sprite {
+                    texture: tex_handle,
+                    frame,
+                    duration,
+                }
+            },
+        )
+        .collect();
+    let atlas = texture_atlas_builder
+        .finish(textures)
+        .expect("Creating texture atlas failed");
+    let atlas_handle = atlases.add(atlas);
+    (sprite_handles, atlas_handle)
 }
 
 pub(crate) struct AseAssets {
@@ -77,7 +122,7 @@ impl AseAssets {
             tilesets,
         }
     }
-    pub(crate) fn move_into_bevy(self, resources: &mut AseAssetResources) {
+    pub(crate) fn move_into_resources(self, resources: &mut AseAssetResources) {
         let AseAssetResources {
             animations,
             anim_info,
@@ -85,61 +130,39 @@ impl AseAssets {
             atlases,
             tilesets,
         } = resources;
-        let mut texture_atlas_builder = TextureAtlasBuilder::default();
 
-        let start = Instant::now();
-        for (key, ts) in self.tilesets.into_iter() {
-            let ase_id = key.ase_id();
-            ts.move_into_bevy(ase_id, *textures, *tilesets);
-        }
-        let tmp_sprites: Vec<crate::sprite::Sprite<Handle<Texture>>> = self
-            .sprites
-            .into_iter()
-            .map(
-                |crate::sprite::Sprite {
-                     frame,
-                     texture: tex,
-                     duration,
-                 }| {
-                    let tex_handle = textures.add(tex);
-                    let texture = textures
-                        .get(&tex_handle)
-                        .expect("Failed to get texture from handle");
-                    texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
-                    crate::sprite::Sprite {
-                        texture: tex_handle,
-                        frame,
-                        duration,
-                    }
-                },
-            )
-            .collect();
-        let atlas = texture_atlas_builder
-            .finish(*textures)
-            .expect("Creating texture atlas failed");
-        let atlas_handle = atlases.add(atlas);
-        let atlas = atlases.get(&atlas_handle).unwrap();
-        debug!("Creating atlas took: {}", start.elapsed().as_secs_f32());
+        if let Some(textures) = textures {
+            if let Some(tilesets) = tilesets {
+                move_tilesets(self.tilesets, textures, tilesets);
+            }
 
-        if let Some(animations) = animations {
-            if let Some(anim_info) = anim_info {
-                for tmp_anim in self.anims {
-                    let mut frames = Vec::with_capacity(tmp_anim.sprites.len());
-                    for sprite_id in tmp_anim.sprites {
-                        let tmp_sprite = &tmp_sprites[sprite_id];
-                        let atlas_index = atlas
-                            .get_texture_index(&tmp_sprite.texture)
-                            .expect("Failed to get texture from atlas");
-                        frames.push(Frame {
-                            sprite: crate::animate::Sprite {
-                                atlas: atlas_handle.clone(),
-                                atlas_index: atlas_index as u32,
-                            },
-                            duration_ms: tmp_sprite.duration,
-                        });
+            // Move sprites
+            if let Some(atlases) = atlases {
+                let (sprites, atlas_handle) = move_sprites(self.sprites, textures, atlases);
+                let atlas = atlases.get(&atlas_handle).unwrap();
+
+                // Move animations
+                if let Some(animations) = animations {
+                    for tmp_anim in self.anims {
+                        let mut frames = Vec::with_capacity(tmp_anim.sprites.len());
+                        for sprite_id in tmp_anim.sprites {
+                            let tmp_sprite = &sprites[sprite_id];
+                            let atlas_index = atlas
+                                .get_texture_index(&tmp_sprite.texture)
+                                .expect("Failed to get texture from atlas");
+                            frames.push(Frame {
+                                sprite: crate::animate::Sprite {
+                                    atlas: atlas_handle.clone(),
+                                    atlas_index: atlas_index as u32,
+                                },
+                                duration_ms: tmp_sprite.duration,
+                            });
+                        }
+                        let handle = animations.add(Animation::new(frames));
+                        if let Some(anim_info) = anim_info {
+                            anim_info.add_anim(tmp_anim.file, tmp_anim.tag, handle);
+                        }
                     }
-                    let handle = animations.add(Animation::new(frames));
-                    anim_info.add_anim(tmp_anim.file, tmp_anim.tag, handle);
                 }
             }
         }
