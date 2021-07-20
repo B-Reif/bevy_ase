@@ -3,7 +3,7 @@ use std::{fmt, path::PathBuf};
 use asefile::AsepriteFile;
 use bevy::utils::HashMap;
 
-/// AseId uniquely identifies an Aseprite file during runtime.
+/// Unique identifier for an Aseprite file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AseId(u32);
 impl AseId {

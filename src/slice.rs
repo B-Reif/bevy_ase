@@ -1,8 +1,7 @@
 use crate::ase::AseId;
 use std::fmt::Display;
 
-/// SliceId identifies a [Slice] within a given Aseprite file.
-/// Used with [SliceAseKey] to uniquely identify slices.
+/// Identifier for a [Slice] within an Aseprite file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SliceId(u32);
 impl SliceId {
@@ -19,7 +18,7 @@ impl Display for SliceId {
     }
 }
 
-/// SliceAseKey uniquely identifies a Slice with an [AseId] and a [SliceId].
+/// Unique identifier for a [Slice] with an [AseId] and a [SliceId].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SliceAseKey {
     ase_id: AseId,

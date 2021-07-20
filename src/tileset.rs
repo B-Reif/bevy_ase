@@ -57,17 +57,17 @@ fn texture_from(ase: &AsepriteFile, tileset: &asefile::Tileset) -> TilesetResult
     ))
 }
 
+/// Identifier for a [Tileset] within an Aseprite file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TilesetId(u32);
 impl TilesetId {
+    /// Creates a new [TilesetId] from an inner u32 value.
     pub fn new(inner: u32) -> Self {
         Self(inner)
     }
+    /// Returns a reference to the id's inner u32 value.
     pub fn inner(&self) -> &u32 {
         &self.0
-    }
-    pub fn into_inner(self) -> u32 {
-        self.0
     }
 }
 impl From<&asefile::TilesetId> for TilesetId {
@@ -81,18 +81,22 @@ impl fmt::Display for TilesetId {
     }
 }
 
+/// Unique identifier for a [Tileset] with an [AseId] and a [TilesetId].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TilesetAseKey {
     ase_id: AseId,
     tileset_id: TilesetId,
 }
 impl TilesetAseKey {
+    /// Creates a new [TilesetAseKey] from an [AseId] and a [TilesetId].
     pub fn new(ase_id: AseId, tileset_id: TilesetId) -> Self {
         Self { ase_id, tileset_id }
     }
+    /// Returns a reference to the key's [AseId].
     pub fn ase_id(&self) -> &AseId {
         &self.ase_id
     }
+    /// Returns a reference to the key's [TilesetId].
     pub fn tileset_id(&self) -> &TilesetId {
         &self.tileset_id
     }
@@ -103,10 +107,11 @@ impl fmt::Display for TilesetAseKey {
     }
 }
 
+/// Width and height of a tile in pixels.
 #[derive(Debug)]
 pub struct TileSize {
-    width: u16,
-    height: u16,
+    pub width: u16,
+    pub height: u16,
 }
 impl TileSize {
     fn from_ase(ase_size: &asefile::TileSize) -> Self {
@@ -115,23 +120,33 @@ impl TileSize {
             height: *ase_size.height(),
         }
     }
-    pub fn width(&self) -> &u16 {
-        &self.width
-    }
-    pub fn height(&self) -> &u16 {
-        &self.height
-    }
 }
 
-/// A Sprite-based tileset.
+/// Data and texture from an Aseprite tileset.
 #[derive(Debug, TypeUuid)]
 #[uuid = "0e2dbd05-dbad-46c9-a943-395f83dfa4ba"]
 pub struct Tileset {
+    /// A unique identifier for this tileset.
     pub key: TilesetAseKey,
+    /// Number of tiles in this tilset.
     pub tile_count: u32,
+    /// Pixel size of this tileset's tiles.
     pub tile_size: TileSize,
+    /// Name of this tileset.
     pub name: String,
+    /// A handle to the tileset's texture. See also the [`Self::texture_size()`] method.
     pub texture: Handle<Texture>,
+}
+impl Tileset {
+    /// Returns the size of the [Tileset]'s texture.
+    /// This has width = tile_size.width and height = tile_size.height * tile_count
+    /// (e.g. all tiles are stored in a vertical strip).
+    pub fn texture_size(&self) -> Vec2 {
+        let TileSize { width, height } = self.tile_size;
+        let tile_size = Vec2::new(width.into(), height.into());
+        let tile_count = self.tile_count as f32;
+        Vec2::new(tile_size.x, tile_size.y * tile_count)
+    }
 }
 
 #[derive(Debug)]

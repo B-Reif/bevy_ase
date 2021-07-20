@@ -51,14 +51,9 @@ pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<
 }
 
 fn layer_settings_from(map_size: UVec2, chunk_size: UVec2, tileset: &Tileset) -> LayerSettings {
-    let Tileset {
-        tile_count,
-        tile_size,
-        ..
-    } = tileset;
-    let tile_size = Vec2::new((*tile_size.width()).into(), (*tile_size.height()).into());
-    let tile_count = *tile_count as f32;
-    let texture_size = Vec2::new(tile_size.x, tile_size.y * tile_count);
+    let Tileset { tile_size, .. } = tileset;
+    let tile_size = Vec2::new(tile_size.width.into(), tile_size.height.into());
+    let texture_size = tileset.texture_size();
     LayerSettings::new(map_size, chunk_size, tile_size, texture_size)
 }
 
