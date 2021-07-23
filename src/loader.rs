@@ -1,4 +1,3 @@
-use crate::animate::AnimationInfo;
 use crate::animation::Animation;
 use crate::processing::{self, ResourceData};
 use crate::slice::Slice;
@@ -229,7 +228,6 @@ impl Loader {
 
 pub(crate) struct AseAssetResources<'a> {
     pub animations: Option<&'a mut Assets<Animation>>,
-    pub anim_info: Option<&'a mut AnimationInfo>,
     pub textures: Option<&'a mut Assets<Texture>>,
     pub atlases: Option<&'a mut Assets<TextureAtlas>>,
     pub tilesets: Option<&'a mut Assets<Tileset>>,
@@ -258,7 +256,6 @@ pub fn ase_importer(
     mut textures: Option<ResMut<Assets<Texture>>>,
     mut atlases: Option<ResMut<Assets<TextureAtlas>>>,
     mut animations: Option<ResMut<Assets<Animation>>>,
-    mut anim_info: Option<ResMut<AnimationInfo>>,
     mut tilesets: Option<ResMut<Assets<Tileset>>>,
     mut slices: Option<ResMut<Assets<Slice>>>,
 ) {
@@ -272,12 +269,10 @@ pub fn ase_importer(
     let textures = textures.as_mut().map(DerefMut::deref_mut);
     let atlases = atlases.as_mut().map(DerefMut::deref_mut);
     let animations = animations.as_mut().map(DerefMut::deref_mut);
-    let anim_info = anim_info.as_mut().map(DerefMut::deref_mut);
     let tilesets = tilesets.as_mut().map(DerefMut::deref_mut);
     let slices = slices.as_mut().map(DerefMut::deref_mut);
     let resources = AseAssetResources {
         animations,
-        anim_info,
         textures,
         atlases,
         tilesets,

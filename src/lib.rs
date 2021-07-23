@@ -14,9 +14,7 @@
 //! [`Bevy`]: https://bevyengine.org/
 //! [`Aseprite`]: https://www.aseprite.org/
 //! [`Resources`]: https://bevyengine.org/learn/book/getting-started/resources/
-pub mod animate;
 mod animation;
-pub mod animation_index;
 mod ase;
 pub mod loader;
 mod processing;
@@ -25,7 +23,6 @@ mod sprite;
 #[cfg(test)]
 mod tests;
 mod tileset;
-pub mod timer;
 
 pub use animation::{Animation, Frame};
 pub use ase::AseId;

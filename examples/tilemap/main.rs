@@ -1,14 +1,13 @@
 use std::path::Path;
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
-use bevy_ase::{self, loader, loader::Loader, timer, Tileset};
+use bevy_ase::{self, loader, loader::Loader, Tileset};
 use bevy_ecs_tilemap::prelude::*;
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
-        .add_plugin(timer::GameTimePlugin)
         .add_plugin(loader::AseLoaderPlugin)
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)

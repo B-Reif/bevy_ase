@@ -3,10 +3,8 @@ use std::path::Path;
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_ase::{
     self,
-    animate::{self, AnimationInfo},
-    animation_index::{AnimationId, AnimationIndex},
     loader::{self, AseAsset, Loader},
-    timer, Animation,
+    Animation,
 };
 
 mod ids;

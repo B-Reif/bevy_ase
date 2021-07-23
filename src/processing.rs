@@ -141,7 +141,6 @@ impl ResourceData {
     pub(crate) fn move_into_resources(self, resources: &mut AseAssetResources) {
         let AseAssetResources {
             animations,
-            anim_info,
             textures,
             atlases,
             tilesets,
@@ -180,9 +179,6 @@ impl ResourceData {
                             });
                         }
                         let handle = animations.add(Animation::new(frames));
-                        if let Some(anim_info) = anim_info {
-                            anim_info.add_anim(tmp_anim.file, tmp_anim.tag, handle);
-                        }
                     }
                 }
             }
