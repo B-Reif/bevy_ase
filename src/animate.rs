@@ -1,8 +1,7 @@
-use std::path::{Path, PathBuf};
-
-use bevy::{prelude::*, reflect::TypeUuid, utils::HashMap};
-
+use crate::animation::Animation;
 use crate::timer::{self, GameTime, GameTimer};
+use bevy::{prelude::*, utils::HashMap};
+use std::path::{Path, PathBuf};
 
 pub struct SpriteAnimatorPlugin;
 
@@ -11,58 +10,6 @@ impl Plugin for SpriteAnimatorPlugin {
         app.init_resource::<AnimationInfo>()
             .add_asset::<Animation>()
             .add_system(sprite_animator.system().after(timer::Label));
-    }
-}
-
-/// A sprite-based animation.
-#[derive(Debug, TypeUuid)]
-#[uuid = "49c1ff21-7abe-4167-b25b-f3730763e348"]
-pub struct Animation {
-    frames: Vec<Frame>,
-}
-
-/// A single frame in an [Animation].
-#[derive(Debug)]
-pub struct Frame {
-    pub sprite: Sprite,
-    pub duration_ms: u32,
-}
-
-/// The sprite of an animation frame. Refers to an item in a sprite atlas.
-#[derive(Debug)]
-pub struct Sprite {
-    // TODO: Add support for pivot points
-    pub atlas: Handle<TextureAtlas>,
-    pub atlas_index: u32,
-}
-
-impl Animation {
-    pub fn new(frames: Vec<Frame>) -> Self {
-        Animation { frames }
-    }
-
-    pub fn num_frames(&self) -> u32 {
-        self.frames.len() as u32
-    }
-
-    pub fn frame(&self, frame: u32) -> &Frame {
-        &self.frames[frame as usize]
-    }
-
-    pub fn frames(&self) -> &[Frame] {
-        &self.frames
-    }
-
-    /// Returns next frame number after the given frame. The second result is
-    /// `true` if we wrapped around.
-    pub fn frame_after(&self, frame: u32) -> (u32, bool) {
-        let frame = frame as usize;
-        let num_frames = self.frames.len();
-        if frame < num_frames - 1 {
-            (frame as u32 + 1, false)
-        } else {
-            (0, true)
-        }
     }
 }
 

@@ -110,7 +110,9 @@ impl fmt::Display for TilesetAseKey {
 /// Width and height of a tile in pixels.
 #[derive(Debug)]
 pub struct TileSize {
+    /// Width of a tile in pixels.
     pub width: u16,
+    /// Height of a tile in pixels.
     pub height: u16,
 }
 impl TileSize {
@@ -143,9 +145,8 @@ impl Tileset {
     /// (e.g. all tiles are stored in a vertical strip).
     pub fn texture_size(&self) -> Vec2 {
         let TileSize { width, height } = self.tile_size;
-        let tile_size = Vec2::new(width.into(), height.into());
         let tile_count = self.tile_count as f32;
-        Vec2::new(tile_size.x, tile_size.y * tile_count)
+        Vec2::new(width as f32, height as f32 * tile_count)
     }
 }
 

@@ -1,11 +1,7 @@
 use std::path::Path;
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
-use bevy_asefile::{
-    self,
-    aseloader::{self, AsepriteAsset, AsepriteLoader},
-    timer, Tileset,
-};
+use bevy_ase::{self, loader, loader::Loader, timer, Tileset};
 use bevy_ecs_tilemap::prelude::*;
 
 fn main() {
@@ -13,7 +9,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(timer::GameTimePlugin)
-        .add_plugin(aseloader::AsepriteLoaderPlugin)
+        .add_plugin(loader::AseLoaderPlugin)
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
@@ -32,18 +28,18 @@ pub enum AppState {
 }
 
 // Collect all sprites and send them to the loader.
-pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<AsepriteLoader>) {
+pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
     info!("Loading assets");
     let handles = asset_server
         .load_folder(Path::new("sprites"))
         .expect("Failed to load sprites");
     for h in &handles {
-        aseloader.add(h.clone().typed::<AsepriteAsset>());
+        aseloader.add(h.clone().typed::<loader::AseAsset>());
     }
 }
 
 // Wait until all sprites are loaded.
-pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<AsepriteLoader>) {
+pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<loader::Loader>) {
     if aseloader.is_loaded() {
         info!("All Aseprite files loaded");
         state.set(AppState::Game).expect("Failed to set game state");

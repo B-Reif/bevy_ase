@@ -8,12 +8,12 @@
 //! To avoid having to implement the `AnimationId` trait manually, you should
 //! use something like `strum`. See the examples directory for details.
 
+use crate::animate::{AnimationBundle, AnimationInfo, PlayAnimation};
+use crate::animation::Animation;
 use bevy::{prelude::*, utils::HashMap};
 use std::{fmt::Debug, hash::Hash, path::Path};
 
-use crate::animate::{Animation, AnimationBundle, AnimationInfo, PlayAnimation};
-
-pub struct AnimationById<Id> {
+pub struct AnimationIndex<Id> {
     map: HashMap<Id, AnimInfo>,
 }
 
@@ -23,18 +23,19 @@ struct AnimInfo {
     atlas_handle: Handle<TextureAtlas>,
 }
 
-impl<Id> Default for AnimationById<Id> {
+impl<Id> Default for AnimationIndex<Id> {
     fn default() -> Self {
-        AnimationById {
+        AnimationIndex {
             map: HashMap::default(),
         }
     }
 }
 
-impl<Id> AnimationById<Id>
+impl<Id> AnimationIndex<Id>
 where
     Id: Eq + Hash + AnimationId + Debug,
 {
+    /// todo
     pub fn initialize(
         &mut self,
         ids: impl Iterator<Item = Id>,
@@ -42,7 +43,7 @@ where
         animations: &Assets<Animation>,
     ) {
         for id in ids {
-            let (path, tag) = id.name();
+            let (path, tag) = id.as_key();
             let path = Path::new(path);
 
             let anim_handle = if let Some(tag) = tag {
@@ -109,6 +110,6 @@ where
 }
 
 pub trait AnimationId {
-    fn name(&self) -> (&str, Option<&str>);
+    fn as_key(&self) -> (&str, Option<&str>);
     fn list_all() -> Box<dyn Iterator<Item = Self>>;
 }

@@ -1,12 +1,12 @@
 use std::path::Path;
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
-use bevy_asefile::{
+use bevy_ase::{
     self,
-    anim_id::{AnimationById, AnimationId},
-    animate::{self, Animation, AnimationInfo},
-    aseloader::{self, AsepriteAsset, AsepriteLoader},
-    timer,
+    animate::{self, AnimationInfo},
+    animation_index::{AnimationId, AnimationIndex},
+    loader::{self, AseAsset, Loader},
+    timer, Animation,
 };
 
 mod ids;
@@ -18,8 +18,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(timer::GameTimePlugin)
         .add_plugin(animate::SpriteAnimatorPlugin)
-        .add_plugin(aseloader::AsepriteLoaderPlugin)
-        .init_resource::<AnimationById<AnimId>>()
+        .add_plugin(loader::AseLoaderPlugin)
+        .init_resource::<AnimationIndex<AnimId>>()
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
@@ -37,23 +37,23 @@ pub enum AppState {
 }
 
 // Collect all sprites and send them to the loader.
-pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<AsepriteLoader>) {
+pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
     info!("Loading assets");
     let handles = asset_server.load_folder(Path::new("sprites")).unwrap();
     for h in &handles {
-        aseloader.add(h.clone().typed::<AsepriteAsset>());
+        aseloader.add(h.clone().typed::<AseAsset>());
     }
 }
 
 // Wait until all sprites are loaded.
 pub fn check_loading_sprites(
     mut state: ResMut<State<AppState>>,
-    mut anim_ids: ResMut<AnimationById<AnimId>>,
+    mut anim_ids: ResMut<AnimationIndex<AnimId>>,
     animations: Res<Assets<Animation>>,
     anim_info: Res<AnimationInfo>,
-    aseloader: Res<AsepriteLoader>,
+    ase_loader: Res<Loader>,
 ) {
-    if aseloader.is_loaded() {
+    if ase_loader.is_loaded() {
         anim_ids.initialize(AnimId::list_all(), &anim_info, &animations);
         info!("All Aseprite files loaded");
         state.set(AppState::Game).unwrap()
@@ -61,7 +61,7 @@ pub fn check_loading_sprites(
 }
 
 // Create some sprites.
-pub fn spawn_sprites(mut commands: Commands, anim_ids: Res<AnimationById<AnimId>>) {
+pub fn spawn_sprites(mut commands: Commands, anim_ids: Res<AnimationIndex<AnimId>>) {
     //commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle({
         let mut b = OrthographicCameraBundle::new_2d();

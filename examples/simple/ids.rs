@@ -1,4 +1,4 @@
-use bevy_asefile::anim_id::AnimationId;
+use bevy_ase::animation_index::AnimationId;
 use strum::{EnumIter, EnumProperty, IntoEnumIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumProperty, EnumIter)]
@@ -10,7 +10,7 @@ pub enum AnimId {
 }
 
 impl AnimationId for AnimId {
-    fn name(&self) -> (&str, Option<&str>) {
+    fn as_key(&self) -> (&str, Option<&str>) {
         let path = self
             .get_str("file")
             .expect("Attribute \"file\" is required");
