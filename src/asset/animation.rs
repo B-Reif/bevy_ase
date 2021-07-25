@@ -12,43 +12,28 @@ pub struct Animation {
     atlas: Handle<TextureAtlas>,
 }
 impl Animation {
+    /// Creates a new Animation with a [Frame] vec and a [TextureAtlas] handle.
     pub fn new(frames: Vec<Frame>, atlas: Handle<TextureAtlas>) -> Self {
         Animation { frames, atlas }
     }
 
-    pub fn num_frames(&self) -> u32 {
-        self.frames.len() as u32
-    }
-
-    pub fn frame(&self, frame: u32) -> &Frame {
-        &self.frames[frame as usize]
-    }
-
+    /// Returns a reference to the animation's [Frame] vec.
     pub fn frames(&self) -> &[Frame] {
         &self.frames
     }
 
+    /// Returns a cloned handle to the animation's [TextureAtlas].
     pub fn atlas(&self) -> Handle<TextureAtlas> {
         self.atlas.clone()
-    }
-
-    /// Returns next frame number after the given frame. The second result is
-    /// `true` if we wrapped around.
-    pub fn frame_after(&self, frame: u32) -> (u32, bool) {
-        let frame = frame as usize;
-        let num_frames = self.frames.len();
-        if frame < num_frames - 1 {
-            (frame as u32 + 1, false)
-        } else {
-            (0, true)
-        }
     }
 }
 
 /// A single frame in an [Animation].
 #[derive(Debug)]
 pub struct Frame {
+    /// The [Sprite] shown during this frame.
     pub sprite: Sprite,
+    /// The duration of this frame in milliseconds.
     pub duration_ms: u32,
 }
 

@@ -1,13 +1,10 @@
-use crate::animation::Animation;
+use crate::asset::{ase::AseData, slice::Slice, Animation, AseAsset, Tileset};
 use crate::processing::{self, ResourceData};
-use crate::slice::Slice;
-use crate::tileset::Tileset;
 use asefile::AsepriteFile;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
     ecs::system::Res,
     prelude::*,
-    reflect::TypeUuid,
     tasks::AsyncComputeTaskPool,
 };
 use std::ops::DerefMut;
@@ -19,47 +16,80 @@ use std::{
     },
 };
 
-pub struct AseLoaderPlugin;
-
-impl Plugin for AseLoaderPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Loader>()
-            .add_asset::<AseAsset>()
-            .add_asset::<Animation>()
-            .add_asset::<Tileset>()
-            .init_asset_loader::<AseAssetLoader>()
-            .add_system(ase_importer.system());
-    }
-}
-
-/// Handle type for ase assets. Used to add assets to [Loader].
+/// Provides a default Bevy app configuration for loading Aseprite files.
+///
+/// This initializes all of bevy_ase's asset types, a [Loader] resource,
+/// an [AseAssetLoader] asset loader, and the [ase_importer] system function.
 ///
 /// # Examples
 ///
 /// ```
 /// use bevy::prelude::*;
-/// use bevy_ase::loader::AseAsset;
-///
-/// // Convert an untyped handle into an AseAsset handle.
-/// pub fn to_typed(handle: HandleUntyped) -> Handle<AseAsset> {
-///    handle.clone().typed::<AseAsset>()
+/// use bevy_ase::loader::AseLoaderDefaultPlugin;
+/// fn main() {
+///     App::build()
+///         .add_plugins(DefaultPlugins)
+///         // Add the default plugin to the bevy app build.
+///         .add_plugin(AseLoaderDefaultPlugin);
 /// }
 /// ```
-#[derive(Debug, TypeUuid)]
-#[uuid = "053511cb-7843-47a3-b5b6-c3279dc7cf6f"]
-pub struct AseAsset {
-    data: AseData,
-    name: PathBuf,
+pub struct AseLoaderDefaultPlugin;
+
+impl Plugin for AseLoaderDefaultPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_asset::<AseAsset>()
+            .add_asset::<Animation>()
+            .add_asset::<Tileset>()
+            .add_asset::<Slice>()
+            .init_resource::<Loader>()
+            .init_asset_loader::<AseAssetLoader>()
+            .add_system(ase_importer.system());
+    }
 }
 
-#[derive(Debug)]
-pub enum AseData {
-    Loaded(AsepriteFile),
-    Processed,
-}
+const DEFAULT_EXTENSIONS: &[&str; 2] = &["aseprite", "ase"];
 
-#[derive(Default)]
-pub struct AseAssetLoader;
+/// Asset loader resource for bevy files.
+///
+/// A default AseAssetLoader instance is already initialized in the AseLoaderDefaultPlugin.
+/// # Examples
+///
+/// ## Default
+/// The default AseAssetLoader loads files with extensions "aseprite" and "ase".
+/// ```
+/// use bevy::prelude::*;
+/// use bevy_ase::loader::AseAssetLoader;
+///
+/// fn build(app: &mut AppBuilder) {
+///     app.init_asset_loader::<AseAssetLoader>();
+/// }
+/// ```
+/// ## Custom extensions
+/// The AseAssetLoader can be instantiated with a custom set of targeted file extensions.
+/// ```
+/// use bevy::prelude::*;
+/// use bevy_ase::loader::AseAssetLoader;
+///
+/// fn build(app: &mut AppBuilder) {
+///     let my_loader = AseAssetLoader {
+///         extensions: &["aseprite", "my_custom_extension"]
+///     };
+///     app.add_asset_loader(my_loader);
+/// }
+///
+/// ```
+pub struct AseAssetLoader {
+    /// Specifies which file extensions to load as Aseprite files.
+    /// Defaults to ["aseprite", "ase"].
+    pub extensions: &'static [&'static str],
+}
+impl Default for AseAssetLoader {
+    fn default() -> Self {
+        Self {
+            extensions: DEFAULT_EXTENSIONS,
+        }
+    }
+}
 
 impl AssetLoader for AseAssetLoader {
     fn load<'a>(
@@ -79,7 +109,7 @@ impl AssetLoader for AseAssetLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        &["aseprite", "ase"]
+        self.extensions
     }
 }
 /// Provides methods for loading [AseAsset].

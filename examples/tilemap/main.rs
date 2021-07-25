@@ -1,14 +1,19 @@
 use std::path::Path;
 
 use bevy::{input::system::exit_on_esc_system, prelude::*};
-use bevy_ase::{self, loader, loader::Loader, Tileset};
+use bevy_ase::{
+    self,
+    asset::{AseAsset, Tileset},
+    loader,
+    loader::Loader,
+};
 use bevy_ecs_tilemap::prelude::*;
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
-        .add_plugin(loader::AseLoaderPlugin)
+        .add_plugin(loader::AseLoaderDefaultPlugin)
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
@@ -33,7 +38,7 @@ pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader
         .load_folder(Path::new("sprites"))
         .expect("Failed to load sprites");
     for h in &handles {
-        aseloader.add(h.clone().typed::<loader::AseAsset>());
+        aseloader.add(h.clone().typed::<AseAsset>());
     }
 }
 

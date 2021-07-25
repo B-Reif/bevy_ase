@@ -1,14 +1,12 @@
-use crate::loader::AseAssetResources;
-use crate::Tileset;
-
-use crate::slice::{SliceAseKey, SliceId};
-use crate::sprite::SpriteData;
-use crate::{
+use crate::asset::{
     animation::{Animation, AnimationData, Frame},
     ase::{AsepriteFileWithId, AsesById},
-    slice::Slice,
+    slice::{Slice, SliceAseKey, SliceId},
     tileset::{TilesetAseKey, TilesetData, TilesetResult},
+    Tileset,
 };
+use crate::loader::AseAssetResources;
+use crate::sprite::SpriteData;
 use asefile::AsepriteFile;
 use bevy::prelude::*;
 use bevy::sprite::TextureAtlasBuilder;
@@ -127,7 +125,7 @@ impl ResourceData {
             for (idx, ase_slice) in file.slices().iter().enumerate() {
                 let slice_id = SliceId::new(idx as u32);
                 let key = SliceAseKey::new(*ase_id, slice_id);
-                let slice = crate::slice::Slice::from_ase(ase_slice, key);
+                let slice = crate::asset::slice::Slice::from_ase(ase_slice, key);
                 slices.push(slice);
             }
         }

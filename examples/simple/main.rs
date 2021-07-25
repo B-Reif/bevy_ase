@@ -1,18 +1,18 @@
 use std::{path::Path, time::Duration};
 
-use benimator::{self};
+use benimator;
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_ase::{
     self,
-    loader::{self, AseAsset, Loader},
-    Animation,
+    asset::{Animation, AseAsset},
+    loader::{self, Loader},
 };
 use bevy_sprite::entity::SpriteSheetBundle;
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
-        .add_plugin(loader::AseLoaderPlugin)
+        .add_plugin(loader::AseLoaderDefaultPlugin)
         .add_plugin(benimator::AnimationPlugin)
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)

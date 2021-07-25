@@ -1,5 +1,5 @@
 //! Types for slice data.
-use crate::ase::AseId;
+use crate::asset::ase::AseId;
 pub use asefile::{Slice9, SliceKey, SliceOrigin, SlicePivot, SliceSize};
 use bevy::reflect::TypeUuid;
 use std::fmt::Display;

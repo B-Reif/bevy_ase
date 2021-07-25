@@ -6,7 +6,7 @@ use bevy::{
 };
 use std::{collections::HashMap, fmt, iter::FromIterator};
 
-use crate::ase::AseId;
+use crate::asset::ase::AseId;
 
 pub(crate) type TilesetResult<T> = std::result::Result<T, TilesetError>;
 

@@ -14,17 +14,17 @@
 //! [`Bevy`]: https://bevyengine.org/
 //! [`Aseprite`]: https://www.aseprite.org/
 //! [`Resources`]: https://bevyengine.org/learn/book/getting-started/resources/
-mod animation;
-mod ase;
+
+/// Provides asset types for working with Aseprite data.
+pub mod asset;
+/// Provides systems and resources for loading Aseprite files.
+///
+/// The default loader configuration provided by [AseLoaderDefaultPlugin] contains
+/// asset types and processing for all Aseprite data types provided by this library.
 pub mod loader;
 mod processing;
-pub mod slice;
 mod sprite;
 #[cfg(test)]
 mod tests;
-mod tileset;
 
-pub use animation::{Animation, Frame};
-pub use ase::AseId;
 pub use asefile::UserData;
-pub use tileset::{TileSize, Tileset, TilesetAseKey, TilesetId};

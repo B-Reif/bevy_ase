@@ -1,7 +1,51 @@
 use std::{fmt, path::PathBuf};
 
 use asefile::AsepriteFile;
+use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
+
+/// Handle type for ase assets.
+///
+/// The [Loader] processes [AseAsset] instances and stores their data
+/// in bevy's Assets resources (as Texture, [Animation], etc).
+///
+/// # Examples
+///
+/// ```
+/// use bevy::prelude::*;
+/// use bevy_ase::loader::AseAsset;
+///
+/// // Convert an untyped handle into an AseAsset handle.
+/// pub fn to_typed(handle: HandleUntyped) -> Handle<AseAsset> {
+///    handle.clone().typed::<AseAsset>()
+/// }
+/// ```
+#[derive(Debug, TypeUuid)]
+#[uuid = "053511cb-7843-47a3-b5b6-c3279dc7cf6f"]
+pub struct AseAsset {
+    pub(crate) data: AseData,
+    pub(crate) name: PathBuf,
+}
+impl AseAsset {
+    /// Returns a reference to the asset's file data, if this asset has not yet been processed.
+    pub fn file(&self) -> Option<&AsepriteFile> {
+        if let AseData::Loaded(file) = &self.data {
+            Some(file)
+        } else {
+            None
+        }
+    }
+}
+
+/// Contains Aseprite file data before processing.
+///
+/// During processing, Loaded data is moved into other asset types.
+/// Afterward, the Loaded instances are replaced with Processed instances.
+#[derive(Debug)]
+pub(crate) enum AseData {
+    Loaded(AsepriteFile),
+    Processed,
+}
 
 /// Unique identifier for an Aseprite file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
