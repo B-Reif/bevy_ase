@@ -31,15 +31,11 @@ pub enum AppState {
     Game,
 }
 
-// Collect all sprites and send them to the loader.
+// Collect the tilemap sprite and send it to the loader.
 pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
     info!("Loading assets");
-    let handles = asset_server
-        .load_folder(Path::new("sprites"))
-        .expect("Failed to load sprites");
-    for h in &handles {
-        aseloader.add(h.clone().typed::<AseAsset>());
-    }
+    let h: Handle<AseAsset> = asset_server.load(Path::new("sprites/tiles.aseprite"));
+    aseloader.add(h.clone());
 }
 
 // Wait until all sprites are loaded.

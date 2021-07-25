@@ -30,7 +30,7 @@ pub enum AppState {
     Game,
 }
 
-// Collect all sprites and send them to the loader.
+// Collect the sprite and send it to the loader.
 pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
     info!("Loading assets");
     let h: Handle<AseAsset> = asset_server.load(Path::new("sprites/hello.aseprite"));
