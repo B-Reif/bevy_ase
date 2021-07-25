@@ -25,6 +25,7 @@ impl Plugin for AseLoaderPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<Loader>()
             .add_asset::<AseAsset>()
+            .add_asset::<Animation>()
             .add_asset::<Tileset>()
             .init_asset_loader::<AseAssetLoader>()
             .add_system(ase_importer.system());

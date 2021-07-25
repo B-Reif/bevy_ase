@@ -1,23 +1,19 @@
-use std::path::Path;
+use std::{path::Path, time::Duration};
 
+use benimator::{self};
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_ase::{
     self,
     loader::{self, AseAsset, Loader},
     Animation,
 };
-
-mod ids;
-
-use ids::AnimId;
+use bevy_sprite::entity::SpriteSheetBundle;
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
-        .add_plugin(timer::GameTimePlugin)
-        .add_plugin(animate::SpriteAnimatorPlugin)
         .add_plugin(loader::AseLoaderPlugin)
-        .init_resource::<AnimationIndex<AnimId>>()
+        .add_plugin(benimator::AnimationPlugin)
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
@@ -37,29 +33,24 @@ pub enum AppState {
 // Collect all sprites and send them to the loader.
 pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
     info!("Loading assets");
-    let handles = asset_server.load_folder(Path::new("sprites")).unwrap();
-    for h in &handles {
-        aseloader.add(h.clone().typed::<AseAsset>());
-    }
+    let h: Handle<AseAsset> = asset_server.load(Path::new("sprites/hello.aseprite"));
+    aseloader.add(h.clone());
 }
 
 // Wait until all sprites are loaded.
-pub fn check_loading_sprites(
-    mut state: ResMut<State<AppState>>,
-    mut anim_ids: ResMut<AnimationIndex<AnimId>>,
-    animations: Res<Assets<Animation>>,
-    anim_info: Res<AnimationInfo>,
-    ase_loader: Res<Loader>,
-) {
+pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, ase_loader: Res<Loader>) {
     if ase_loader.is_loaded() {
-        anim_ids.initialize(AnimId::list_all(), &anim_info, &animations);
         info!("All Aseprite files loaded");
         state.set(AppState::Game).unwrap()
     }
 }
 
 // Create some sprites.
-pub fn spawn_sprites(mut commands: Commands, anim_ids: Res<AnimationIndex<AnimId>>) {
+pub fn spawn_sprites(
+    mut commands: Commands,
+    animations: Res<Assets<Animation>>,
+    mut sprite_sheet_animations: ResMut<Assets<benimator::SpriteSheetAnimation>>,
+) {
     //commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle({
         let mut b = OrthographicCameraBundle::new_2d();
@@ -67,11 +58,28 @@ pub fn spawn_sprites(mut commands: Commands, anim_ids: Res<AnimationIndex<AnimId
         b
     });
 
-    commands.spawn_bundle(anim_ids.get(AnimId::Dummy));
-    commands.spawn_bundle({
-        let mut b = anim_ids.get(AnimId::DummySad);
-        b.sprite.transform.translation = Vec3::new(50.0, 0.0, 0.0);
-        // b.sprite.transform.scale = Vec3::splat(3.0);
-        b
-    });
+    let anims = animations.iter().enumerate();
+    for (idx, (_id, anim)) in anims {
+        let b_frames = anim
+            .frames()
+            .iter()
+            .map(|f| benimator::Frame {
+                duration: Duration::from_millis(f.duration_ms as u64),
+                index: f.sprite.atlas_index,
+            })
+            .collect();
+        let b_anim = benimator::SpriteSheetAnimation::from_frames(b_frames);
+        let b_handle = sprite_sheet_animations.add(b_anim);
+        let texture_atlas = anim.atlas();
+        let x_position = idx as f32 * 50.0;
+
+        commands
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas,
+                transform: Transform::from_xyz(x_position, 0.0, 0.0),
+                ..Default::default()
+            })
+            .insert(b_handle)
+            .insert(benimator::Play);
+    }
 }

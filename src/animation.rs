@@ -1,6 +1,7 @@
 use crate::sprite::Sprite;
 use asefile::{AsepriteFile, Tag};
-use bevy::reflect::TypeUuid;
+use bevy::prelude::*;
+use bevy::{reflect::TypeUuid, sprite::TextureAtlas};
 use std::path::PathBuf;
 
 /// A sprite-based animation.
@@ -8,10 +9,11 @@ use std::path::PathBuf;
 #[uuid = "49c1ff21-7abe-4167-b25b-f3730763e348"]
 pub struct Animation {
     frames: Vec<Frame>,
+    atlas: Handle<TextureAtlas>,
 }
 impl Animation {
-    pub fn new(frames: Vec<Frame>) -> Self {
-        Animation { frames }
+    pub fn new(frames: Vec<Frame>, atlas: Handle<TextureAtlas>) -> Self {
+        Animation { frames, atlas }
     }
 
     pub fn num_frames(&self) -> u32 {
@@ -24,6 +26,10 @@ impl Animation {
 
     pub fn frames(&self) -> &[Frame] {
         &self.frames
+    }
+
+    pub fn atlas(&self) -> Handle<TextureAtlas> {
+        self.atlas.clone()
     }
 
     /// Returns next frame number after the given frame. The second result is

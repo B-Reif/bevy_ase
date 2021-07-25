@@ -178,7 +178,7 @@ impl ResourceData {
                                 duration_ms: tmp_sprite.duration,
                             });
                         }
-                        let handle = animations.add(Animation::new(frames));
+                        let _handle = animations.add(Animation::new(frames, atlas_handle.clone()));
                     }
                 }
             }
