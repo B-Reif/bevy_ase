@@ -3,7 +3,7 @@ use crate::processing::{self, ResourceData};
 use asefile::AsepriteFile;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
-    ecs::system::{Res, SystemParam},
+    ecs::system::Res,
     prelude::*,
     tasks::AsyncComputeTaskPool,
 };
@@ -261,24 +261,13 @@ impl Loader {
     }
 }
 
-/// Set of asset resources for [ase_importer] system function.
-///
-/// This struct specifies resource types as SystemParams for the [ase_importer] system function.
-/// Most apps will not instantiate this struct by hand.
-#[allow(rustc::missing_docs)]
-#[derive(SystemParam)]
-pub struct AseAssetResources<'a> {
-    /// Texture resource.
-    pub textures: ResMut<'a, Assets<Texture>>,
-    /// Optional Animation resource.
-    pub animations: Option<ResMut<'a, Assets<Animation>>>,
-    /// Optional TextureAtlas resource.
-    pub atlases: Option<ResMut<'a, Assets<TextureAtlas>>>,
-    /// Optional Tileset resource.
-    pub tilesets: Option<ResMut<'a, Assets<Tileset>>>,
-    /// Optional Slice resource.
-    pub slices: Option<ResMut<'a, Assets<Slice>>>,
-}
+pub(crate) type AseAssetResources<'a> = (
+    ResMut<'a, Assets<Texture>>,
+    Option<ResMut<'a, Assets<Animation>>>,
+    Option<ResMut<'a, Assets<TextureAtlas>>>,
+    Option<ResMut<'a, Assets<Tileset>>>,
+    Option<ResMut<'a, Assets<Slice>>>,
+);
 
 /// System function for moving loaded Aseprite assets into Resoures.
 ///

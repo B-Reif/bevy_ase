@@ -161,13 +161,7 @@ impl ResourceData {
         }
     }
     pub(crate) fn move_into_resources(self, resources: &mut AseAssetResources) {
-        let AseAssetResources {
-            animations,
-            textures,
-            atlases,
-            tilesets,
-            slices,
-        } = resources;
+        let (textures, animations, atlases, tilesets, slices) = resources;
 
         if let Some(slices) = slices {
             move_slices(self.slices, slices);
