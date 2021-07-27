@@ -5,7 +5,7 @@ use bevy::{
     render::texture::{Extent3d, TextureDimension, TextureFormat},
     sprite::TextureAtlas,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// A sprite-based animation.
 #[derive(Debug, TypeUuid)]
@@ -81,18 +81,18 @@ pub(crate) struct AnimationData {
     pub(crate) sprites: Vec<usize>,
 }
 impl AnimationData {
-    pub(crate) fn new(name: &PathBuf, ase: &AsepriteFile, sprite_offset: usize) -> Self {
+    pub(crate) fn new(name: &Path, ase: &AsepriteFile, sprite_offset: usize) -> Self {
         Self {
-            file: name.clone(),
+            file: name.to_path_buf(),
             tag: None,
             sprites: (0..ase.num_frames())
                 .map(|f| sprite_offset + f as usize)
                 .collect(),
         }
     }
-    pub(crate) fn from_tag(name: &PathBuf, sprite_offset: usize, tag: &Tag) -> Self {
+    pub(crate) fn from_tag(name: &Path, sprite_offset: usize, tag: &Tag) -> Self {
         AnimationData {
-            file: name.clone(),
+            file: name.to_path_buf(),
             tag: Some(tag.name().to_owned()),
             sprites: (tag.from_frame()..tag.to_frame() + 1)
                 .map(|f| sprite_offset + f as usize)

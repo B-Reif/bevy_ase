@@ -26,7 +26,7 @@ use std::{
 /// ```
 /// use bevy::prelude::*;
 /// use bevy_ase::loader::AseLoaderDefaultPlugin;
-/// fn main() {
+/// fn app() {
 ///     App::build()
 ///         .add_plugins(DefaultPlugins)
 ///         // Add the default plugin to the bevy app build.
@@ -270,6 +270,14 @@ pub(crate) struct AseAssetResources<'a> {
     pub slices: Option<&'a mut Assets<Slice>>,
 }
 
+type ResourceTuple<'a> = (
+    ResMut<'a, Assets<Texture>>,
+    Option<ResMut<'a, Assets<TextureAtlas>>>,
+    Option<ResMut<'a, Assets<Animation>>>,
+    Option<ResMut<'a, Assets<Tileset>>>,
+    Option<ResMut<'a, Assets<Slice>>>,
+);
+
 /// System function for moving loaded Aseprite assets into Resoures.
 ///
 /// # Examples
@@ -280,7 +288,7 @@ pub(crate) struct AseAssetResources<'a> {
 ///
 /// // Creates a Bevy app and adds the ase_importer system.
 /// // This system is already added by default in AseLoaderPlugin.
-/// fn main() {
+/// fn app() {
 ///     App::build().add_system(ase_importer.system());
 /// }
 /// ```
@@ -289,11 +297,7 @@ pub fn ase_importer(
     task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AseAsset>>,
     asset_server: Res<AssetServer>,
-    mut textures: ResMut<Assets<Texture>>,
-    mut atlases: Option<ResMut<Assets<TextureAtlas>>>,
-    mut animations: Option<ResMut<Assets<Animation>>>,
-    mut tilesets: Option<ResMut<Assets<Tileset>>>,
-    mut slices: Option<ResMut<Assets<Slice>>>,
+    resources: ResourceTuple,
 ) {
     let pending = loader.pending_count();
     if pending > 0 {
@@ -302,17 +306,13 @@ pub fn ase_importer(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
-    let textures = textures.deref_mut();
-    let atlases = atlases.as_mut().map(DerefMut::deref_mut);
-    let animations = animations.as_mut().map(DerefMut::deref_mut);
-    let tilesets = tilesets.as_mut().map(DerefMut::deref_mut);
-    let slices = slices.as_mut().map(DerefMut::deref_mut);
+    let (mut textures, mut atlases, mut animations, mut tilesets, mut slices) = resources;
     let resources = AseAssetResources {
-        textures,
-        animations,
-        atlases,
-        tilesets,
-        slices,
+        textures: textures.deref_mut(),
+        animations: animations.as_deref_mut(),
+        atlases: atlases.as_deref_mut(),
+        tilesets: tilesets.as_deref_mut(),
+        slices: slices.as_deref_mut(),
     };
     loader.move_finished_into_resources(resources);
 }
