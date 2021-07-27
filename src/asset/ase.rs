@@ -1,19 +1,20 @@
-use std::{fmt, path::PathBuf};
-
 use asefile::AsepriteFile;
 use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
+use std::{fmt, path::PathBuf};
 
 /// Handle type for ase assets.
 ///
-/// The [Loader] processes [AseAsset] instances and stores their data
-/// in bevy's Assets resources (as Texture, [Animation], etc).
+/// [crate::loader::Loader] processes [AseAsset] instances and stores their data
+/// as various other data types in bevy's Assets resources.
+///
+/// Once an AseAsset has been processed into other resource types, its data is dropped.
 ///
 /// # Examples
 ///
 /// ```
 /// use bevy::prelude::*;
-/// use bevy_ase::loader::AseAsset;
+/// use bevy_ase::asset::AseAsset;
 ///
 /// // Convert an untyped handle into an AseAsset handle.
 /// pub fn to_typed(handle: HandleUntyped) -> Handle<AseAsset> {

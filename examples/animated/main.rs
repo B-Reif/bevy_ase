@@ -1,13 +1,11 @@
-use std::{path::Path, time::Duration};
+use std::path::Path;
 
-use benimator;
-use bevy::{input::system::exit_on_esc_system, prelude::*};
+use bevy::{input::system::exit_on_esc_system, prelude::*, sprite::entity::SpriteSheetBundle};
 use bevy_ase::{
     self,
     asset::{Animation, AseAsset},
     loader::{self, Loader},
 };
-use bevy_sprite::entity::SpriteSheetBundle;
 
 fn main() {
     App::build()
@@ -51,7 +49,6 @@ pub fn spawn_sprites(
     animations: Res<Assets<Animation>>,
     mut sprite_sheet_animations: ResMut<Assets<benimator::SpriteSheetAnimation>>,
 ) {
-    //commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle({
         let mut b = OrthographicCameraBundle::new_2d();
         b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
@@ -60,17 +57,10 @@ pub fn spawn_sprites(
 
     let anims = animations.iter().enumerate();
     for (idx, (_id, anim)) in anims {
-        let b_frames = anim
-            .frames()
-            .iter()
-            .map(|f| benimator::Frame {
-                duration: Duration::from_millis(f.duration_ms as u64),
-                index: f.sprite.atlas_index,
-            })
-            .collect();
-        let b_anim = benimator::SpriteSheetAnimation::from_frames(b_frames);
-        let b_handle = sprite_sheet_animations.add(b_anim);
         let texture_atlas = anim.atlas();
+        // The "benimator" feature provides a From implementation to convert animations.
+        let anim: benimator::SpriteSheetAnimation = anim.into();
+        let anim_handle = sprite_sheet_animations.add(anim);
         let x_position = idx as f32 * 50.0;
 
         commands
@@ -79,7 +69,7 @@ pub fn spawn_sprites(
                 transform: Transform::from_xyz(x_position, 0.0, 0.0),
                 ..Default::default()
             })
-            .insert(b_handle)
+            .insert(anim_handle)
             .insert(benimator::Play);
     }
 }

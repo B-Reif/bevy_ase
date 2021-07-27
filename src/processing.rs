@@ -1,12 +1,11 @@
 use crate::asset::{
-    animation::{Animation, AnimationData, Frame},
+    animation::{Animation, AnimationData, Frame, Sprite, SpriteData},
     ase::{AsepriteFileWithId, AsesById},
     slice::{Slice, SliceAseKey, SliceId},
     tileset::{TilesetAseKey, TilesetData, TilesetResult},
     Tileset,
 };
 use crate::loader::AseAssetResources;
-use crate::sprite::SpriteData;
 use asefile::AsepriteFile;
 use bevy::prelude::*;
 use bevy::sprite::TextureAtlasBuilder;
@@ -58,16 +57,41 @@ fn move_tilesets(
     }
 }
 
+fn move_animations(
+    animation_data: Vec<AnimationData>,
+    sprite_data: Vec<SpriteData<Handle<Texture>>>,
+    atlas: &TextureAtlas,
+    atlas_handle: Handle<TextureAtlas>,
+    animation_assets: &mut Assets<Animation>,
+) {
+    for tmp_anim in animation_data {
+        let mut frames = Vec::with_capacity(tmp_anim.sprites.len());
+        for sprite_id in tmp_anim.sprites {
+            let tmp_sprite = &sprite_data[sprite_id];
+            let atlas_index = atlas
+                .get_texture_index(&tmp_sprite.texture)
+                .expect("Failed to get texture from atlas");
+            frames.push(Frame {
+                sprite: Sprite {
+                    atlas_index: atlas_index as u32,
+                },
+                duration_ms: tmp_sprite.duration,
+            });
+        }
+        let _handle = animation_assets.add(Animation::new(frames, atlas_handle.clone()));
+    }
+}
+
 fn move_sprites(
     sprites: Vec<SpriteData<Texture>>,
     textures: &mut Assets<Texture>,
     atlases: &mut Assets<TextureAtlas>,
 ) -> (Vec<SpriteData<Handle<Texture>>>, Handle<TextureAtlas>) {
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    let sprite_handles: Vec<crate::sprite::SpriteData<Handle<Texture>>> = sprites
+    let sprite_handles: Vec<SpriteData<Handle<Texture>>> = sprites
         .into_iter()
         .map(
-            |crate::sprite::SpriteData {
+            |SpriteData {
                  frame,
                  texture: tex,
                  duration,
@@ -77,7 +101,7 @@ fn move_sprites(
                     .get(&tex_handle)
                     .expect("Failed to get texture from handle");
                 texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
-                crate::sprite::SpriteData {
+                SpriteData {
                     texture: tex_handle,
                     frame,
                     duration,
@@ -149,36 +173,18 @@ impl ResourceData {
             move_slices(self.slices, slices);
         }
 
-        if let Some(textures) = textures {
-            if let Some(tilesets) = tilesets {
-                move_tilesets(self.tilesets, textures, tilesets);
-            }
+        if let Some(tilesets) = tilesets {
+            move_tilesets(self.tilesets, textures, tilesets);
+        }
 
-            // Move sprites
-            if let Some(atlases) = atlases {
-                let (sprites, atlas_handle) = move_sprites(self.sprites, textures, atlases);
-                let atlas = atlases.get(&atlas_handle).unwrap();
+        // Move sprites
+        if let Some(atlases) = atlases {
+            let (sprites, atlas_handle) = move_sprites(self.sprites, textures, atlases);
+            let atlas = atlases.get(&atlas_handle).unwrap();
 
-                // Move animations
-                if let Some(animations) = animations {
-                    for tmp_anim in self.anims {
-                        let mut frames = Vec::with_capacity(tmp_anim.sprites.len());
-                        for sprite_id in tmp_anim.sprites {
-                            let tmp_sprite = &sprites[sprite_id];
-                            let atlas_index = atlas
-                                .get_texture_index(&tmp_sprite.texture)
-                                .expect("Failed to get texture from atlas");
-                            frames.push(Frame {
-                                sprite: crate::sprite::Sprite {
-                                    atlas: atlas_handle.clone(),
-                                    atlas_index: atlas_index as u32,
-                                },
-                                duration_ms: tmp_sprite.duration,
-                            });
-                        }
-                        let _handle = animations.add(Animation::new(frames, atlas_handle.clone()));
-                    }
-                }
+            // Move animations
+            if let Some(animations) = animations {
+                move_animations(self.anims, sprites, atlas, atlas_handle, animations);
             }
         }
     }

@@ -38,6 +38,8 @@ pub struct AseLoaderDefaultPlugin;
 impl Plugin for AseLoaderDefaultPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_asset::<AseAsset>()
+            .add_asset::<Texture>()
+            .add_asset::<TextureAtlas>()
             .add_asset::<Animation>()
             .add_asset::<Tileset>()
             .add_asset::<Slice>()
@@ -114,15 +116,17 @@ impl AssetLoader for AseAssetLoader {
 }
 /// Provides methods for loading [AseAsset].
 ///
-/// The [AseLoaderPlugin] adds this as a resource by default.
+/// The [AseLoaderDefaultPlugin] adds this as a resource by default.
 /// To load Aseprite files, or check their loading status, a system can accept the [Loader] as a parameter.
 ///
 /// # Examples
 ///
 /// ```
+/// use bevy::prelude::*;
+/// use bevy_ase::loader::Loader;
 /// // Adds a Loader instance to the app's resources.
-/// // The AseLoaderPlugin already does this by default.
-/// fn build(&self, app: &mut AppBuilder) {
+/// // The AseLoaderDefaultPlugin already does this by default.
+/// fn build(app: &mut AppBuilder) {
 ///     app.init_resource::<Loader>();
 /// }
 /// ```
@@ -150,12 +154,13 @@ impl Loader {
     ///
     /// ```
     /// use bevy::prelude::*;
-    /// use bevy_ase::loader::{AseAsset, Loader};
+    /// use bevy_ase::asset::AseAsset;
+    /// use bevy_ase::loader::Loader;
     /// use std::path::Path;
     ///
     /// // System function which sends ase assets in the "sprites" folder to the loader.
     /// pub fn load_sprites(asset_server: Res<AssetServer>, mut aseloader: ResMut<Loader>) {
-    ///     let handles = asset_server.load_folder(Path::new("sprites")).unwrap();
+    ///     let handles = asset_server.load_folder(std::path::Path::new("sprites")).unwrap();
     ///     for h in &handles {
     ///         aseloader.add(h.clone().typed::<AseAsset>());
     ///     }
@@ -258,8 +263,8 @@ impl Loader {
 }
 
 pub(crate) struct AseAssetResources<'a> {
+    pub textures: &'a mut Assets<Texture>,
     pub animations: Option<&'a mut Assets<Animation>>,
-    pub textures: Option<&'a mut Assets<Texture>>,
     pub atlases: Option<&'a mut Assets<TextureAtlas>>,
     pub tilesets: Option<&'a mut Assets<Tileset>>,
     pub slices: Option<&'a mut Assets<Slice>>,
@@ -284,7 +289,7 @@ pub fn ase_importer(
     task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AseAsset>>,
     asset_server: Res<AssetServer>,
-    mut textures: Option<ResMut<Assets<Texture>>>,
+    mut textures: ResMut<Assets<Texture>>,
     mut atlases: Option<ResMut<Assets<TextureAtlas>>>,
     mut animations: Option<ResMut<Assets<Animation>>>,
     mut tilesets: Option<ResMut<Assets<Tileset>>>,
@@ -297,14 +302,14 @@ pub fn ase_importer(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
-    let textures = textures.as_mut().map(DerefMut::deref_mut);
+    let textures = textures.deref_mut();
     let atlases = atlases.as_mut().map(DerefMut::deref_mut);
     let animations = animations.as_mut().map(DerefMut::deref_mut);
     let tilesets = tilesets.as_mut().map(DerefMut::deref_mut);
     let slices = slices.as_mut().map(DerefMut::deref_mut);
     let resources = AseAssetResources {
-        animations,
         textures,
+        animations,
         atlases,
         tilesets,
         slices,
