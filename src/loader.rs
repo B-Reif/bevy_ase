@@ -3,11 +3,10 @@ use crate::processing::{self, ResourceData};
 use asefile::AsepriteFile;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
-    ecs::system::Res,
+    ecs::system::{Res, SystemParam},
     prelude::*,
     tasks::AsyncComputeTaskPool,
 };
-use std::ops::DerefMut;
 use std::{
     path::PathBuf,
     sync::{
@@ -262,21 +261,24 @@ impl Loader {
     }
 }
 
-pub(crate) struct AseAssetResources<'a> {
-    pub textures: &'a mut Assets<Texture>,
-    pub animations: Option<&'a mut Assets<Animation>>,
-    pub atlases: Option<&'a mut Assets<TextureAtlas>>,
-    pub tilesets: Option<&'a mut Assets<Tileset>>,
-    pub slices: Option<&'a mut Assets<Slice>>,
+/// Set of asset resources for [ase_importer] system function.
+///
+/// This struct specifies resource types as SystemParams for the [ase_importer] system function.
+/// Most apps will not instantiate this struct by hand.
+#[allow(rustc::missing_docs)]
+#[derive(SystemParam)]
+pub struct AseAssetResources<'a> {
+    /// Texture resource.
+    pub textures: ResMut<'a, Assets<Texture>>,
+    /// Optional Animation resource.
+    pub animations: Option<ResMut<'a, Assets<Animation>>>,
+    /// Optional TextureAtlas resource.
+    pub atlases: Option<ResMut<'a, Assets<TextureAtlas>>>,
+    /// Optional Tileset resource.
+    pub tilesets: Option<ResMut<'a, Assets<Tileset>>>,
+    /// Optional Slice resource.
+    pub slices: Option<ResMut<'a, Assets<Slice>>>,
 }
-
-type ResourceTuple<'a> = (
-    ResMut<'a, Assets<Texture>>,
-    Option<ResMut<'a, Assets<TextureAtlas>>>,
-    Option<ResMut<'a, Assets<Animation>>>,
-    Option<ResMut<'a, Assets<Tileset>>>,
-    Option<ResMut<'a, Assets<Slice>>>,
-);
 
 /// System function for moving loaded Aseprite assets into Resoures.
 ///
@@ -297,7 +299,7 @@ pub fn ase_importer(
     task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AseAsset>>,
     asset_server: Res<AssetServer>,
-    resources: ResourceTuple,
+    resources: AseAssetResources,
 ) {
     let pending = loader.pending_count();
     if pending > 0 {
@@ -306,13 +308,5 @@ pub fn ase_importer(
     if loader.all_todo_handles_ready(&asset_server) {
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
-    let (mut textures, mut atlases, mut animations, mut tilesets, mut slices) = resources;
-    let resources = AseAssetResources {
-        textures: textures.deref_mut(),
-        animations: animations.as_deref_mut(),
-        atlases: atlases.as_deref_mut(),
-        tilesets: tilesets.as_deref_mut(),
-        slices: slices.as_deref_mut(),
-    };
     loader.move_finished_into_resources(resources);
 }
