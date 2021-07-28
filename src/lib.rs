@@ -91,9 +91,37 @@
 
 /// Provides asset types for working with Aseprite data.
 pub mod asset;
-/// Implements conversions from bevy_ase assets into benimator assets.
 #[cfg(feature = "benimator")]
+/// Implements conversions from bevy_ase assets into benimator assets.
+///
+/// Enabled by the "benimator" feature. Provides a [From] &[Animation](asset::Animation)
+/// implementation for benimator's SpriteSheetAnimation type,
+/// and [From] &[Frame](asset::Frame) implementation for benimator's Frame type.
+///
+/// # Examples
+///
+/// ```
+/// #[cfg(feature = "benimator")]
+/// use bevy_ase::asset::{Animation, Frame};
+/// use benimator::SpriteSheetAnimation;
+///
+/// // Create a benimator SpriteSheetAnimation from a reference to a bevy_ase Animation.
+/// fn to_benimator_anim(animation: &Animation) -> SpriteSheetAnimation {
+///     animation.into()       
+/// }
+///
+/// // Create a benimator Frame from a a reference to a bevy_ase Frame.
+/// fn to_benimator_frame(frame: &Frame) -> benimator::Frame {
+///     frame.into()   
+/// }
+/// ```
 pub mod benimator;
+
+#[cfg(feature = "bevy_ecs_tilemap")]
+/// Implements conversions from bevy_ase assets into bevy_ecs_tilemap assets.
+///
+/// Adds the [layer_settings](asset::Tileset::layer_settings) method to [Tileset](asset::Tileset).
+pub mod bevy_ecs_tilemap;
 
 /// Provides systems and resources for loading Aseprite files.
 ///

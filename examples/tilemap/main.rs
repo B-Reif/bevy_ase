@@ -46,13 +46,6 @@ pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<
     }
 }
 
-fn layer_settings_from(map_size: UVec2, chunk_size: UVec2, tileset: &Tileset) -> LayerSettings {
-    let Tileset { tile_size, .. } = tileset;
-    let tile_size = Vec2::new(tile_size.width.into(), tile_size.height.into());
-    let texture_size = tileset.texture_size();
-    LayerSettings::new(map_size, chunk_size, tile_size, texture_size)
-}
-
 fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle({
         let mut b = OrthographicCameraBundle::new_2d();
@@ -85,7 +78,8 @@ fn spawn_tiles(
     for (_, tileset) in tilesets.iter() {
         let texture_handle = tileset.texture.clone();
         let material_handle = materials.add(ColorMaterial::texture(texture_handle));
-        let settings = layer_settings_from(UVec2::new(3, 3), UVec2::new(3, 3), tileset);
+        // The layer_settings method of Tileset is implemented in the "bevy_ecs_tilemap" feature.
+        let settings = tileset.layer_settings(UVec2::new(3, 3), UVec2::new(3, 3));
 
         let (mut layer_builder, layer_entity) =
             LayerBuilder::<TileBundle>::new(&mut commands, settings, 0u16, 0u16);
