@@ -4,28 +4,46 @@ use bevy::utils::HashMap;
 use bevy::{asset::Asset, prelude::*};
 use std::path::{Path, PathBuf};
 
-/// Provides map access to an Ase file's [Animation], [Slice], and [Tileset] assets,
-/// using their string names as keys.
+/// Provides a map to [Handles](Handle) for an Ase file's assets.
 ///
-/// Internally maps [String] keys to [Vec] values of each asset type.
-/// There may be more than one asset with the same name.
-/// If just one asset is expected, compose the result with `first()`.
+/// Instances of this type are owned by [AseFileMap]. To access them during runtime,
+/// use the AseFileMap as a system parameter, and index each AseAssetMap by
+/// using the file's path as a key.
 ///
 /// # Examples
 ///
 /// ```
-/// use bevy_ase::asset::{AseAssetMap, Animation};
+/// use bevy_ase::asset::{AseAssetMap, Animation, Tileset};
 /// use bevy::asset::Handle;
-/// // Get the first animation in this file with the name "foo".
-/// fn get_foo(ase_asset_map: AseAssetMap) -> Option<Handle<Animation>> {
-///     ase_asset_map.animations("foo")?.first().map(Handle::clone)
+/// // Get all animations in this file with the name "foo".
+/// fn get_foo_animations(ase_asset_map: &AseAssetMap) -> Option<&Vec<Handle<Animation>>> {
+///     ase_asset_map.animations("foo")
+/// }
+///
+/// // Get the first tileset in this file with the name "bar".
+/// fn get_bar_tileset(ase_asset_map: &AseAssetMap) -> Option<Handle<Tileset>> {
+///     ase_asset_map.tilesets("foo")?.first().map(Handle::clone)
 /// }
 /// ```
+///
+/// # Notes
+///
+/// The owning AseFileMap instance provides convenience methods to index a file
+/// and an asset simultaneously. These methods also clone the Handle value before returning.
+///
+/// [Texture] assets are mapped to their frame index. This map does not include Textures
+/// rendered from [Tileset] assets. To access a Tileset's Texture, use the texture field
+/// on a tileset asset.
+///
+/// [Animation], [Slice], and Tileset assets are mapped to their string name. There may be
+/// more than one asset with the same name. If just one asset is expected,
+/// compose the result with `first()`.
 #[derive(Default)]
 pub struct AseAssetMap {
     pub(crate) animations: HashMap<String, Vec<Handle<Animation>>>,
     pub(crate) slices: HashMap<String, Vec<Handle<Slice>>>,
     pub(crate) tilesets: HashMap<String, Vec<Handle<Tileset>>>,
+    pub(crate) textures: HashMap<u32, Handle<Texture>>,
 }
 impl AseAssetMap {
     /// Returns all animations with the given tag name.
@@ -40,6 +58,10 @@ impl AseAssetMap {
     pub fn tilesets(&self, tileset_name: &str) -> Option<&Vec<Handle<Tileset>>> {
         self.tilesets.get(tileset_name)
     }
+    /// Returns the texture for the given frame index.
+    pub fn texture(&self, frame_index: u32) -> Option<&Handle<Texture>> {
+        self.textures.get(&frame_index)
+    }
 
     // Insert API
     pub(crate) fn insert_animation(&mut self, tag_name: String, handle: Handle<Animation>) {
@@ -50,6 +72,13 @@ impl AseAssetMap {
         let tilesets = self.tilesets.entry(tileset_name).or_default();
         tilesets.push(handle);
     }
+    pub(crate) fn insert_slice(&mut self, slice_name: String, handle: Handle<Slice>) {
+        let slices = self.slices.entry(slice_name).or_default();
+        slices.push(handle);
+    }
+    pub(crate) fn insert_texture(&mut self, frame_index: u32, handle: Handle<Texture>) {
+        self.textures.insert(frame_index, handle);
+    }
 }
 
 #[allow(clippy::ptr_arg)]
@@ -57,7 +86,8 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
     vec.first().map(Handle::clone)
 }
 
-/// Provides map access to Ase assets, keyed by the Ase file's path.
+/// Resource type. Provides map access to Ase asset [Handles](Handle),
+/// keyed by the Ase file's path.
 ///
 /// Internally maps [PathBuf] keys to [AseAssetMap] values.
 /// Each asset map stores [Handle] values for that file's assets.
@@ -69,8 +99,14 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
 /// use bevy::prelude::*;
 /// use bevy_ase::asset::{Animation, AseFileMap, AseAssetMap};
 ///
-/// // Compose with [AseAssetMap] methods to get individual assets:
+/// // Use access methods to index both the file and an asset, and get a new handle.
 /// fn get_foo_bar(ase_file_map: AseFileMap) -> Option<Handle<Animation>> {
+///     ase_file_map.animation(Path::new("sprites/foo.aseprite"), "bar")
+/// }
+///
+/// // Or compose with [AseAssetMap] methods to get individual assets.
+/// // This is equivalent to the above:
+/// fn get_foo_bar_long(ase_file_map: AseFileMap) -> Option<Handle<Animation>> {
 ///     ase_file_map
 ///         .get(Path::new("sprites/foo.aseprite"))?
 ///         .animations("bar")?
@@ -78,12 +114,8 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
 ///         .map(Handle::clone)
 /// }
 ///
-/// // Or use a shortcut method to index both the file and the asset, and then clone the [Handle].
-/// // This is equivalent to the above:
-/// fn get_foo_bar_short(ase_file_map: AseFileMap) -> Option<Handle<Animation>> {
-///     ase_file_map.animation(Path::new("sprites/foo.aseprite"), "bar")
-/// }
 /// ```
+
 pub struct AseFileMap(pub(crate) HashMap<PathBuf, AseAssetMap>);
 impl AseFileMap {
     /// Returns the asset map for the file with the given path.

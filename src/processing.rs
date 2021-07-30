@@ -18,9 +18,19 @@ fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Texture>>>
         .collect()
 }
 
-fn move_slices(slice_vec: Vec<Slice>, slices: &mut Assets<Slice>) {
+fn move_slices(
+    slice_vec: Vec<Slice>,
+    slices: &mut Assets<Slice>,
+    mut file_assets: Option<&mut AseAssetMap>,
+) {
     for s in slice_vec {
-        slices.add(s);
+        if let Some(ref mut file_assets) = file_assets {
+            let slice_name = s.name.clone();
+            let handle = slices.add(s);
+            file_assets.insert_slice(slice_name, handle);
+        } else {
+            slices.add(s);
+        }
     }
 }
 
@@ -109,11 +119,21 @@ fn move_animations(data: AnimationImportData, resources: AnimationImportResource
     }
 }
 
+struct SpriteImportResources<'a> {
+    textures: &'a mut Assets<Texture>,
+    atlases: &'a mut Assets<TextureAtlas>,
+    file_assets: Option<&'a mut AseAssetMap>,
+}
+
 fn move_sprites(
     sprites: Vec<SpriteData<Texture>>,
-    textures: &mut Assets<Texture>,
-    atlases: &mut Assets<TextureAtlas>,
+    resources: SpriteImportResources,
 ) -> (Vec<SpriteData<Handle<Texture>>>, Handle<TextureAtlas>) {
+    let SpriteImportResources {
+        textures,
+        atlases,
+        mut file_assets,
+    } = resources;
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
     let sprite_handles: Vec<SpriteData<Handle<Texture>>> = sprites
         .into_iter()
@@ -124,6 +144,9 @@ fn move_sprites(
                  duration,
              }| {
                 let tex_handle = textures.add(tex);
+                if let Some(ref mut file_assets) = file_assets {
+                    file_assets.insert_texture(frame, tex_handle.clone());
+                }
                 let texture = textures
                     .get(&tex_handle)
                     .expect("Failed to get texture from handle");
@@ -204,7 +227,8 @@ impl ResourceData {
         let (textures, animations, atlases, tilesets, slices, index) = resources;
 
         if let Some(slices) = slices {
-            move_slices(data.slices, slices);
+            let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
+            move_slices(data.slices, slices, file_assets);
         }
 
         if let Some(tilesets) = tilesets {
@@ -219,7 +243,13 @@ impl ResourceData {
 
         // Move sprites
         if let Some(atlases) = atlases {
-            let (sprites, atlas_handle) = move_sprites(data.sprites, textures, atlases);
+            let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
+            let resources = SpriteImportResources {
+                textures,
+                atlases,
+                file_assets,
+            };
+            let (sprites, atlas_handle) = move_sprites(data.sprites, resources);
             let atlas = atlases.get(&atlas_handle).unwrap();
             // Move animations
             if let Some(animations) = animations {
