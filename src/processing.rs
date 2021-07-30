@@ -1,9 +1,8 @@
 use crate::asset::{
     animation::{Animation, AnimationData, Frame, Sprite, SpriteData},
-    asset_index::AseFileMap,
     slice::Slice,
     tileset::{TilesetData, TilesetResult},
-    Tileset,
+    AseAssetMap, Tileset,
 };
 use crate::loader::AseAssetResources;
 use asefile::AsepriteFile;
@@ -37,7 +36,6 @@ fn move_tilesets(
 
 // Data used to move animations into Bevy.
 struct AnimationImportData<'a> {
-    ase_path: &'a Path,
     animation_data: Vec<AnimationData>,
     sprite_data: Vec<SpriteData<Handle<Texture>>>,
     atlas: &'a TextureAtlas,
@@ -46,12 +44,11 @@ struct AnimationImportData<'a> {
 // Resource types to receive animation data.
 struct AnimationImportResources<'a> {
     animations: &'a mut Assets<Animation>,
-    index: Option<&'a mut AseFileMap>,
+    file_assets: Option<&'a mut AseAssetMap>,
 }
 
 fn move_animations(data: AnimationImportData, resources: AnimationImportResources) {
     let AnimationImportData {
-        ase_path,
         animation_data,
         sprite_data,
         atlas,
@@ -59,7 +56,7 @@ fn move_animations(data: AnimationImportData, resources: AnimationImportResource
     } = data;
     let AnimationImportResources {
         animations,
-        mut index,
+        mut file_assets,
     } = resources;
     for anim_data in animation_data.into_iter() {
         let mut frames = Vec::with_capacity(anim_data.sprites.len());
@@ -77,11 +74,9 @@ fn move_animations(data: AnimationImportData, resources: AnimationImportResource
             });
         }
         let handle = animations.add(Animation::new(frames, atlas_handle.clone()));
-        if let Some(ref mut index) = index {
-            if let Some(tag_name) = anim_data.tag_name {
-                if let Some(file_assets) = index.0.get_mut(ase_path) {
-                    file_assets.insert_animation(tag_name, handle);
-                }
+        if let Some(tag_name) = anim_data.tag_name {
+            if let Some(ref mut file_assets) = file_assets {
+                file_assets.insert_animation(tag_name, handle);
             }
         }
     }
@@ -180,6 +175,8 @@ impl ResourceData {
     pub(crate) fn move_into_resources(self, path: PathBuf, resources: &mut AseAssetResources) {
         let data = self;
         let (textures, animations, atlases, tilesets, slices, index) = resources;
+        let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
+
         if let Some(slices) = slices {
             move_slices(data.slices, slices);
         }
@@ -195,15 +192,15 @@ impl ResourceData {
             // Move animations
             if let Some(animations) = animations {
                 let data = AnimationImportData {
-                    ase_path: &path,
                     animation_data: data.anims,
                     sprite_data: sprites,
                     atlas,
                     atlas_handle,
                 };
+
                 let resources = AnimationImportResources {
                     animations,
-                    index: index.as_deref_mut(),
+                    file_assets,
                 };
                 move_animations(data, resources);
             }
