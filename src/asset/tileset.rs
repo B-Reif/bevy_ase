@@ -125,24 +125,4 @@ impl TilesetData<Texture> {
     ) -> TilesetResult<Self> {
         TilesetData::<Texture>::from_ase(texture_from, ase, ase_tileset)
     }
-    pub(crate) fn move_into_bevy(
-        self,
-        textures: &mut Assets<Texture>,
-        tilesets: &mut Assets<Tileset>,
-    ) -> Handle<Tileset> {
-        let TilesetData {
-            tile_count,
-            tile_size,
-            name,
-            texture,
-        } = self;
-        let tex_handle = textures.add(texture);
-        let tileset = Tileset {
-            name,
-            texture: tex_handle,
-            tile_count,
-            tile_size,
-        };
-        tilesets.add(tileset)
-    }
 }

@@ -46,6 +46,10 @@ impl AseAssetMap {
         let anims = self.animations.entry(tag_name).or_default();
         anims.push(handle);
     }
+    pub(crate) fn insert_tileset(&mut self, tileset_name: String, handle: Handle<Tileset>) {
+        let tilesets = self.tilesets.entry(tileset_name).or_default();
+        tilesets.push(handle);
+    }
 }
 
 #[allow(clippy::ptr_arg)]
