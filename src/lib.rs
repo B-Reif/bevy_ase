@@ -32,6 +32,7 @@
 //! use bevy::prelude::*;
 //! use bevy_ase::asset::AseAsset;
 //! use bevy_ase::loader::{AseLoaderDefaultPlugin, Loader};
+//! use std::path::Path;
 //!
 //! // Initialize and run a bevy app with the default bevy_ase configuration.
 //! fn main() {
@@ -43,7 +44,7 @@
 //!
 //! // Get an aseprite asset and send it to the loader.
 //! pub fn load_sprites(asset_server: Res<AssetServer>, mut loader: ResMut<Loader>) {
-//!     let h: Handle<AseAsset> = asset_server.load(std::path::Path::new("sprites/hello.aseprite"));
+//!     let h: Handle<AseAsset> = asset_server.load(Path::new("sprites/hello.aseprite"));
 //!     loader.add(h.clone());
 //! }
 //! ```
@@ -90,6 +91,10 @@
 //! [`SpriteSheetAnimation`]: https://docs.rs/benimator/0.3.0/benimator/struct.SpriteSheetAnimation.html
 
 /// Provides asset types for working with Aseprite data.
+///
+/// Data from Aseprite files moved into Bevy includes Textures, [Animations](asset::Animation),
+/// [Slices](asset::slice::Slice), and [Tilesets](asset::Tileset). This module also provides
+/// map resources to access assets by keying with a file path and an asset name.
 pub mod asset;
 #[cfg(feature = "benimator")]
 /// Implements conversions from bevy_ase assets into benimator assets.

@@ -4,16 +4,14 @@ use bevy::{
     reflect::TypeUuid,
     render::texture::{Extent3d, TextureDimension, TextureFormat},
 };
-use std::{collections::HashMap, fmt, iter::FromIterator};
-
-use crate::asset::ase::AseId;
+use std::fmt;
 
 pub(crate) type TilesetResult<T> = std::result::Result<T, TilesetError>;
 
 #[derive(Debug)]
 pub enum TilesetError {
-    MissingId(TilesetId),
-    NoPixels(TilesetId),
+    MissingId(asefile::TilesetId),
+    NoPixels(asefile::TilesetId),
 }
 impl fmt::Display for TilesetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -30,8 +28,8 @@ impl fmt::Display for TilesetError {
 impl From<&TilesetImageError> for TilesetError {
     fn from(e: &TilesetImageError) -> Self {
         match e {
-            TilesetImageError::MissingTilesetId(id) => Self::MissingId(id.into()),
-            TilesetImageError::NoPixelsInTileset(id) => Self::NoPixels(id.into()),
+            TilesetImageError::MissingTilesetId(id) => Self::MissingId(*id),
+            TilesetImageError::NoPixelsInTileset(id) => Self::NoPixels(*id),
         }
     }
 }
@@ -57,56 +55,6 @@ fn texture_from(ase: &AsepriteFile, tileset: &asefile::Tileset) -> TilesetResult
     ))
 }
 
-/// Identifier for a [Tileset] within an Aseprite file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TilesetId(u32);
-impl TilesetId {
-    /// Creates a new [TilesetId] from an inner u32 value.
-    pub fn new(inner: u32) -> Self {
-        Self(inner)
-    }
-    /// Returns a reference to the id's inner u32 value.
-    pub fn inner(&self) -> &u32 {
-        &self.0
-    }
-}
-impl From<&asefile::TilesetId> for TilesetId {
-    fn from(ase_id: &asefile::TilesetId) -> Self {
-        Self(*ase_id.value())
-    }
-}
-impl fmt::Display for TilesetId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TilesetId({})", self.0)
-    }
-}
-
-/// Unique identifier for a [Tileset] with an [AseId] and a [TilesetId].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TilesetAseKey {
-    ase_id: AseId,
-    tileset_id: TilesetId,
-}
-impl TilesetAseKey {
-    /// Creates a new [TilesetAseKey] from an [AseId] and a [TilesetId].
-    pub fn new(ase_id: AseId, tileset_id: TilesetId) -> Self {
-        Self { ase_id, tileset_id }
-    }
-    /// Returns a reference to the key's [AseId].
-    pub fn ase_id(&self) -> &AseId {
-        &self.ase_id
-    }
-    /// Returns a reference to the key's [TilesetId].
-    pub fn tileset_id(&self) -> &TilesetId {
-        &self.tileset_id
-    }
-}
-impl fmt::Display for TilesetAseKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TilesetKey({}, {})", self.ase_id, self.tileset_id)
-    }
-}
-
 /// Width and height of a tile in pixels.
 #[derive(Debug)]
 pub struct TileSize {
@@ -128,8 +76,6 @@ impl TileSize {
 #[derive(Debug, TypeUuid)]
 #[uuid = "0e2dbd05-dbad-46c9-a943-395f83dfa4ba"]
 pub struct Tileset {
-    /// A unique identifier for this tileset.
-    pub key: TilesetAseKey,
     /// Number of tiles in this tilset.
     pub tile_count: u32,
     /// Pixel size of this tileset's tiles.
@@ -152,7 +98,6 @@ impl Tileset {
 
 #[derive(Debug)]
 pub(crate) struct TilesetData<T> {
-    pub(crate) id: TilesetId,
     pub(crate) tile_count: u32,
     pub(crate) tile_size: TileSize,
     pub(crate) name: String,
@@ -163,11 +108,9 @@ impl<T> TilesetData<T> {
     where
         F: FnOnce(&AsepriteFile, &asefile::Tileset) -> TilesetResult<T>,
     {
-        let ase_id = *ase_tileset.id();
         let texture = f(ase, ase_tileset)?;
         let ase_size = ase_tileset.tile_size();
         Ok(Self {
-            id: TilesetId(*ase_id.value()),
             tile_count: *ase_tileset.tile_count(),
             tile_size: TileSize::from_ase(ase_size),
             name: ase_tileset.name().to_string(),
@@ -184,12 +127,10 @@ impl TilesetData<Texture> {
     }
     pub(crate) fn move_into_bevy(
         self,
-        ase_id: &AseId,
         textures: &mut Assets<Texture>,
         tilesets: &mut Assets<Tileset>,
     ) -> Handle<Tileset> {
         let TilesetData {
-            id,
             tile_count,
             tile_size,
             name,
@@ -197,21 +138,11 @@ impl TilesetData<Texture> {
         } = self;
         let tex_handle = textures.add(texture);
         let tileset = Tileset {
-            key: TilesetAseKey::new(*ase_id, id),
             name,
             texture: tex_handle,
             tile_count,
             tile_size,
         };
         tilesets.add(tileset)
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct TilesetsById<T>(HashMap<TilesetId, TilesetData<T>>);
-impl<T> TilesetsById<T> {}
-impl<T> FromIterator<(TilesetId, TilesetData<T>)> for TilesetsById<T> {
-    fn from_iter<I: IntoIterator<Item = (TilesetId, TilesetData<T>)>>(iter: I) -> Self {
-        Self(iter.into_iter().collect())
     }
 }

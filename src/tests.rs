@@ -20,14 +20,12 @@ fn load_test_file(path: &PathBuf) -> AsepriteFile {
 fn load_test_file_as_assets(name: &str) -> ResourceData {
     let path = test_path(name);
     let ase = load_test_file(&path);
-    let mut inputs = Vec::new();
-    inputs.push((path, ase));
-    processing::ResourceData::new(inputs)
+    processing::ResourceData::new(&path, &ase)
 }
 
 #[test]
 fn tileset_file() {
     let assets = load_test_file_as_assets("tileset");
-    let tilesets = assets.tilesets.0;
+    let tilesets = assets.tilesets;
     assert_eq!(tilesets.len(), 1);
 }

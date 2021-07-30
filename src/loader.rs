@@ -1,5 +1,6 @@
+use crate::asset::asset_index::AseFileMap;
 use crate::asset::{ase::AseData, slice::Slice, Animation, AseAsset, Tileset};
-use crate::processing::{self, ResourceData};
+use crate::processing::{self, ResourceDataByFile};
 use asefile::AsepriteFile;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadState, LoadedAsset},
@@ -133,7 +134,7 @@ impl AssetLoader for AseAssetLoader {
 pub struct Loader {
     todo_handles: Vec<Handle<AseAsset>>,
     in_progress: Arc<AtomicU32>,
-    done: Arc<Mutex<Vec<processing::ResourceData>>>,
+    done: Arc<Mutex<Vec<processing::ResourceDataByFile>>>,
 }
 
 impl Default for Loader {
@@ -227,14 +228,14 @@ impl Loader {
 
         let output = self.done.clone();
         let task = pool.spawn(async move {
-            let processed = processing::ResourceData::new(ase_files);
+            let processed = processing::ResourceDataByFile::new(ase_files);
             let mut out = output.lock().expect("Failed to get lock");
             out.push(processed);
         });
         task.detach();
     }
 
-    fn take_finished(&mut self) -> Option<Vec<ResourceData>> {
+    fn take_finished(&mut self) -> Option<Vec<ResourceDataByFile>> {
         let results = {
             let mut lock = self.done.try_lock();
             if let Ok(ref mut data) = lock {
@@ -261,12 +262,14 @@ impl Loader {
     }
 }
 
+// Tuple of all resource types to move data into.
 pub(crate) type AseAssetResources<'a> = (
     ResMut<'a, Assets<Texture>>,
     Option<ResMut<'a, Assets<Animation>>>,
     Option<ResMut<'a, Assets<TextureAtlas>>>,
     Option<ResMut<'a, Assets<Tileset>>>,
     Option<ResMut<'a, Assets<Slice>>>,
+    Option<ResMut<'a, AseFileMap>>,
 );
 
 /// System function for moving loaded Aseprite assets into Resoures.
