@@ -1,4 +1,4 @@
-Utilities for loading [`Aseprite`] files into a [`Bevy`] application.
+Utilities for loading Aseprite files into a Bevy application.
 
 Provides an AssetLoader struct which directly
 reads .aseprite files without an intermediate import step.
@@ -10,11 +10,11 @@ or query the loading state.
 
 This library creates several types of resources:
 
-- [`Texture`] data, which contains the file's images.
-- [`TextureAtlas`] data, which contains mapping information for each sprite in a spritesheet.
-- [Animation](asset::Animation) data.
-- [Slice](asset::slice::Slice) data.
-- [Tileset](asset::Tileset) data (from files created in Aseprite v1.3 beta).
+- Texture data, which contains the file's images.
+- TextureAtlas data, which contains mapping information for each sprite in a spritesheet.
+- Animation data.
+- Slice data.
+- Tileset data (from files created in Aseprite v1.3 beta).
 
 # Configuration
 
