@@ -116,6 +116,7 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
 ///
 /// ```
 
+#[derive(Default)]
 pub struct AseFileMap(pub(crate) HashMap<PathBuf, AseAssetMap>);
 impl AseFileMap {
     /// Returns the asset map for the file with the given path.
