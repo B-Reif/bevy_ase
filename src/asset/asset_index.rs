@@ -38,7 +38,7 @@ use std::path::{Path, PathBuf};
 /// [Animation], [Slice], and Tileset assets are mapped to their string name. There may be
 /// more than one asset with the same name. If just one asset is expected,
 /// compose the result with `first()`.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AseAssetMap {
     pub(crate) animations: HashMap<String, Vec<Handle<Animation>>>,
     pub(crate) slices: HashMap<String, Vec<Handle<Slice>>>,
@@ -116,15 +116,16 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
 ///
 /// ```
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AseFileMap(pub(crate) HashMap<PathBuf, AseAssetMap>);
 impl AseFileMap {
     /// Returns the asset map for the file with the given path.
     pub fn get(&self, path: &Path) -> Option<&AseAssetMap> {
         self.0.get(path)
     }
-    pub(crate) fn get_mut(&mut self, path: &Path) -> Option<&mut AseAssetMap> {
-        self.0.get_mut(path)
+    pub(crate) fn get_mut(&mut self, path: PathBuf) -> &mut AseAssetMap {
+        let entry = self.0.entry(path);
+        entry.or_default()
     }
     /// Returns the first animation in an Ase file with the given tag name.
     pub fn animation(&self, path: &Path, tag_name: &str) -> Option<Handle<Animation>> {

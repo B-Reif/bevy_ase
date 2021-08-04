@@ -21,7 +21,7 @@ fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Texture>>>
 fn move_slices(
     slice_vec: Vec<Slice>,
     slices: &mut Assets<Slice>,
-    mut file_assets: Option<&mut AseAssetMap>,
+    mut file_assets: &mut Option<&mut AseAssetMap>,
 ) {
     for s in slice_vec {
         if let Some(ref mut file_assets) = file_assets {
@@ -37,15 +37,14 @@ fn move_slices(
 struct TilesetImportResources<'a> {
     textures: &'a mut Assets<Texture>,
     tilesets: &'a mut Assets<Tileset>,
-    file_assets: Option<&'a mut AseAssetMap>,
 }
 
-fn move_tilesets(tileset_data: Vec<TilesetData<Texture>>, resources: TilesetImportResources) {
-    let TilesetImportResources {
-        textures,
-        tilesets,
-        mut file_assets,
-    } = resources;
+fn move_tilesets(
+    tileset_data: Vec<TilesetData<Texture>>,
+    resources: TilesetImportResources,
+    mut file_assets: &mut Option<&mut AseAssetMap>,
+) {
+    let TilesetImportResources { textures, tilesets } = resources;
     for ts in tileset_data.into_iter() {
         // ts.move_into_bevy(textures, tilesets);
         let TilesetData {
@@ -78,23 +77,19 @@ struct AnimationImportData<'a> {
     atlas: &'a TextureAtlas,
     atlas_handle: Handle<TextureAtlas>,
 }
-// Resource types to receive animation data.
-struct AnimationImportResources<'a> {
-    animations: &'a mut Assets<Animation>,
-    file_assets: Option<&'a mut AseAssetMap>,
-}
 
-fn move_animations(data: AnimationImportData, resources: AnimationImportResources) {
+fn move_animations(
+    data: AnimationImportData,
+    animations: &mut Assets<Animation>,
+    file_assets: &mut Option<&mut AseAssetMap>,
+) {
     let AnimationImportData {
         animation_data,
         sprite_data,
         atlas,
         atlas_handle,
     } = data;
-    let AnimationImportResources {
-        animations,
-        mut file_assets,
-    } = resources;
+
     for anim_data in animation_data.into_iter() {
         let mut frames = Vec::with_capacity(anim_data.sprites.len());
         for sprite_id in &anim_data.sprites {
@@ -122,18 +117,14 @@ fn move_animations(data: AnimationImportData, resources: AnimationImportResource
 struct SpriteImportResources<'a> {
     textures: &'a mut Assets<Texture>,
     atlases: &'a mut Assets<TextureAtlas>,
-    file_assets: Option<&'a mut AseAssetMap>,
 }
 
 fn move_sprites(
     sprites: Vec<SpriteData<Texture>>,
     resources: SpriteImportResources,
+    file_assets: &mut Option<&mut AseAssetMap>,
 ) -> (Vec<SpriteData<Handle<Texture>>>, Handle<TextureAtlas>) {
-    let SpriteImportResources {
-        textures,
-        atlases,
-        mut file_assets,
-    } = resources;
+    let SpriteImportResources { textures, atlases } = resources;
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
     let sprite_handles: Vec<SpriteData<Handle<Texture>>> = sprites
         .into_iter()
@@ -226,30 +217,21 @@ impl ResourceData {
         let data = self;
         let (textures, animations, atlases, tilesets, slices, index) = resources;
 
+        let mut file_assets = index.as_deref_mut().map(|idk| idk.get_mut(path));
+
         if let Some(slices) = slices {
-            let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
-            move_slices(data.slices, slices, file_assets);
+            move_slices(data.slices, slices, &mut file_assets);
         }
 
         if let Some(tilesets) = tilesets {
-            let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
-            let resources = TilesetImportResources {
-                textures,
-                tilesets,
-                file_assets,
-            };
-            move_tilesets(data.tilesets, resources);
+            let resources = TilesetImportResources { textures, tilesets };
+            move_tilesets(data.tilesets, resources, &mut file_assets);
         }
 
         // Move sprites
         if let Some(atlases) = atlases {
-            let file_assets = index.as_mut().and_then(|x| x.get_mut(&path));
-            let resources = SpriteImportResources {
-                textures,
-                atlases,
-                file_assets,
-            };
-            let (sprites, atlas_handle) = move_sprites(data.sprites, resources);
+            let resources = SpriteImportResources { textures, atlases };
+            let (sprites, atlas_handle) = move_sprites(data.sprites, resources, &mut file_assets);
             let atlas = atlases.get(&atlas_handle).unwrap();
             // Move animations
             if let Some(animations) = animations {
@@ -260,12 +242,7 @@ impl ResourceData {
                     atlas_handle,
                 };
 
-                let file_assets = index.as_deref_mut().and_then(|x| x.get_mut(&path));
-                let resources = AnimationImportResources {
-                    animations,
-                    file_assets,
-                };
-                move_animations(data, resources);
+                move_animations(data, animations, &mut file_assets);
             }
         }
     }
