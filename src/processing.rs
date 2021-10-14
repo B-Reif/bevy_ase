@@ -21,7 +21,7 @@ fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Texture>>>
 fn move_slices(
     slice_vec: Vec<Slice>,
     slices: &mut Assets<Slice>,
-    mut file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut Option<&mut AseAssetMap>,
 ) {
     for s in slice_vec {
         if let Some(ref mut file_assets) = file_assets {
@@ -42,7 +42,7 @@ struct TilesetImportResources<'a> {
 fn move_tilesets(
     tileset_data: Vec<TilesetData<Texture>>,
     resources: TilesetImportResources,
-    mut file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut Option<&mut AseAssetMap>,
 ) {
     let TilesetImportResources { textures, tilesets } = resources;
     for ts in tileset_data.into_iter() {
