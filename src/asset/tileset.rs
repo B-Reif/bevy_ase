@@ -2,7 +2,7 @@ use asefile::{AsepriteFile, TilesetImageError};
 use bevy::{
     prelude::*,
     reflect::TypeUuid,
-    render::texture::{Extent3d, TextureDimension, TextureFormat},
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use std::fmt;
 
@@ -39,15 +39,15 @@ impl From<TilesetImageError> for TilesetError {
     }
 }
 
-fn texture_from(ase: &AsepriteFile, tileset: &asefile::Tileset) -> TilesetResult<Texture> {
+fn texture_from(ase: &AsepriteFile, tileset: &asefile::Tileset) -> TilesetResult<Image> {
     let tileset_id = tileset.id();
     let image = ase.tileset_image(&tileset_id)?;
     let size = Extent3d {
         width: image.width(),
         height: image.height(),
-        depth: 1,
+        depth_or_array_layers: 1,
     };
-    Ok(Texture::new_fill(
+    Ok(Image::new_fill(
         size,
         TextureDimension::D2,
         image.as_raw(),
@@ -83,7 +83,7 @@ pub struct Tileset {
     /// Name of this tileset.
     pub name: String,
     /// A handle to the tileset's texture. See also the [`Self::texture_size()`] method.
-    pub texture: Handle<Texture>,
+    pub texture: Handle<Image>,
 }
 impl Tileset {
     /// Returns the size of the [Tileset]'s texture.
@@ -118,11 +118,11 @@ impl<T> TilesetData<T> {
         })
     }
 }
-impl TilesetData<Texture> {
+impl TilesetData<Image> {
     pub(crate) fn from_ase_with_texture(
         ase: &AsepriteFile,
         ase_tileset: &asefile::Tileset,
     ) -> TilesetResult<Self> {
-        TilesetData::<Texture>::from_ase(texture_from, ase, ase_tileset)
+        TilesetData::<Image>::from_ase(texture_from, ase, ase_tileset)
     }
 }

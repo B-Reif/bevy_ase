@@ -36,9 +36,9 @@ use std::{
 pub struct AseLoaderDefaultPlugin;
 
 impl Plugin for AseLoaderDefaultPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_asset::<AseAsset>()
-            .add_asset::<Texture>()
+            .add_asset::<Image>()
             .add_asset::<TextureAtlas>()
             .add_asset::<Animation>()
             .add_asset::<Tileset>()
@@ -265,7 +265,7 @@ impl Loader {
 
 // Tuple of all resource types to move data into.
 pub(crate) type AseAssetResources<'a> = (
-    ResMut<'a, Assets<Texture>>,
+    ResMut<'a, Assets<Image>>,
     Option<ResMut<'a, Assets<Animation>>>,
     Option<ResMut<'a, Assets<TextureAtlas>>>,
     Option<ResMut<'a, Assets<Tileset>>>,

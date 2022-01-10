@@ -43,7 +43,7 @@ pub struct AseAssetMap {
     pub(crate) animations: HashMap<String, Vec<Handle<Animation>>>,
     pub(crate) slices: HashMap<String, Vec<Handle<Slice>>>,
     pub(crate) tilesets: HashMap<String, Vec<Handle<Tileset>>>,
-    pub(crate) textures: HashMap<u32, Handle<Texture>>,
+    pub(crate) textures: HashMap<u32, Handle<Image>>,
 }
 impl AseAssetMap {
     /// Returns all animations with the given tag name.
@@ -59,7 +59,7 @@ impl AseAssetMap {
         self.tilesets.get(tileset_name)
     }
     /// Returns the texture for the given frame index.
-    pub fn texture(&self, frame_index: u32) -> Option<&Handle<Texture>> {
+    pub fn texture(&self, frame_index: u32) -> Option<&Handle<Image>> {
         self.textures.get(&frame_index)
     }
 
@@ -76,7 +76,7 @@ impl AseAssetMap {
         let slices = self.slices.entry(slice_name).or_default();
         slices.push(handle);
     }
-    pub(crate) fn insert_texture(&mut self, frame_index: u32, handle: Handle<Texture>) {
+    pub(crate) fn insert_texture(&mut self, frame_index: u32, handle: Handle<Image>) {
         self.textures.insert(frame_index, handle);
     }
 }

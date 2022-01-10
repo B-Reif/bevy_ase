@@ -2,10 +2,9 @@ use asefile::{AsepriteFile, Tag};
 use bevy::{
     prelude::*,
     reflect::TypeUuid,
-    render::texture::{Extent3d, TextureDimension, TextureFormat},
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
     sprite::TextureAtlas,
 };
-use std::path::{Path, PathBuf};
 
 /// A sprite-based animation.
 #[derive(Debug, TypeUuid)]
@@ -43,15 +42,15 @@ pub(crate) struct SpriteData<T> {
     pub(crate) texture: T,
     pub(crate) duration: u32,
 }
-impl SpriteData<Texture> {
+impl SpriteData<Image> {
     pub(crate) fn new(ase: &AsepriteFile, frame: u32) -> Self {
         let img = ase.frame(frame).image();
         let size = Extent3d {
             width: ase.width() as u32,
             height: ase.height() as u32,
-            depth: 1,
+            depth_or_array_layers: 1,
         };
-        let texture = Texture::new_fill(
+        let texture = Image::new_fill(
             size,
             TextureDimension::D2,
             img.as_raw(),
@@ -76,23 +75,20 @@ pub struct Frame {
 
 #[derive(Debug)]
 pub(crate) struct AnimationData {
-    pub(crate) file: PathBuf,
     pub(crate) tag_name: Option<String>,
     pub(crate) sprites: Vec<usize>,
 }
 impl AnimationData {
-    pub(crate) fn new(name: &Path, ase: &AsepriteFile, sprite_offset: usize) -> Self {
+    pub(crate) fn new(ase: &AsepriteFile, sprite_offset: usize) -> Self {
         Self {
-            file: name.to_path_buf(),
             tag_name: None,
             sprites: (0..ase.num_frames())
                 .map(|f| sprite_offset + f as usize)
                 .collect(),
         }
     }
-    pub(crate) fn from_tag(name: &Path, sprite_offset: usize, tag: &Tag) -> Self {
-        AnimationData {
-            file: name.to_path_buf(),
+    pub(crate) fn from_tag(sprite_offset: usize, tag: &Tag) -> Self {
+        Self {
             tag_name: Some(tag.name().to_owned()),
             sprites: (tag.from_frame()..tag.to_frame() + 1)
                 .map(|f| sprite_offset + f as usize)

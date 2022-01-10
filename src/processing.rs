@@ -1,5 +1,5 @@
 use crate::asset::{
-    animation::{Animation, AnimationData, Frame, Sprite, SpriteData},
+    animation::{self, Animation, AnimationData, Frame, SpriteData},
     slice::Slice,
     tileset::{TilesetData, TilesetResult},
     AseAssetMap, Tileset,
@@ -10,11 +10,11 @@ use bevy::sprite::TextureAtlasBuilder;
 use bevy::{prelude::*, utils::HashMap};
 use std::path::{Path, PathBuf};
 
-fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Texture>>> {
+fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Image>>> {
     ase.tilesets()
         .map()
         .values()
-        .map(|ts| TilesetData::<Texture>::from_ase_with_texture(&ase, ts))
+        .map(|ts| TilesetData::<Image>::from_ase_with_texture(&ase, ts))
         .collect()
 }
 
@@ -35,12 +35,12 @@ fn move_slices(
 }
 
 struct TilesetImportResources<'a> {
-    textures: &'a mut Assets<Texture>,
+    textures: &'a mut Assets<Image>,
     tilesets: &'a mut Assets<Tileset>,
 }
 
 fn move_tilesets(
-    tileset_data: Vec<TilesetData<Texture>>,
+    tileset_data: Vec<TilesetData<Image>>,
     resources: TilesetImportResources,
     file_assets: &mut Option<&mut AseAssetMap>,
 ) {
@@ -73,7 +73,7 @@ fn move_tilesets(
 // Data used to move animations into Bevy.
 struct AnimationImportData<'a> {
     animation_data: Vec<AnimationData>,
-    sprite_data: Vec<SpriteData<Handle<Texture>>>,
+    sprite_data: Vec<SpriteData<Handle<Image>>>,
     atlas: &'a TextureAtlas,
     atlas_handle: Handle<TextureAtlas>,
 }
@@ -99,7 +99,7 @@ fn move_animations(
                 .get_texture_index(&tmp_sprite.texture)
                 .expect("Failed to get texture from atlas");
             frames.push(Frame {
-                sprite: Sprite {
+                sprite: animation::Sprite {
                     atlas_index: atlas_index as u32,
                 },
                 duration_ms: tmp_sprite.duration,
@@ -115,18 +115,18 @@ fn move_animations(
 }
 
 struct SpriteImportResources<'a> {
-    textures: &'a mut Assets<Texture>,
+    textures: &'a mut Assets<Image>,
     atlases: &'a mut Assets<TextureAtlas>,
 }
 
 fn move_sprites(
-    sprites: Vec<SpriteData<Texture>>,
+    sprites: Vec<SpriteData<Image>>,
     resources: SpriteImportResources,
     file_assets: &mut Option<&mut AseAssetMap>,
-) -> (Vec<SpriteData<Handle<Texture>>>, Handle<TextureAtlas>) {
+) -> (Vec<SpriteData<Handle<Image>>>, Handle<TextureAtlas>) {
     let SpriteImportResources { textures, atlases } = resources;
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    let sprite_handles: Vec<SpriteData<Handle<Texture>>> = sprites
+    let sprite_handles: Vec<SpriteData<Handle<Image>>> = sprites
         .into_iter()
         .map(
             |SpriteData {
@@ -177,26 +177,26 @@ impl ResourceDataByFile {
 }
 
 pub(crate) struct ResourceData {
-    pub(crate) sprites: Vec<SpriteData<Texture>>,
+    pub(crate) sprites: Vec<SpriteData<Image>>,
     pub(crate) anims: Vec<AnimationData>,
-    pub(crate) tilesets: Vec<TilesetData<Texture>>,
+    pub(crate) tilesets: Vec<TilesetData<Image>>,
     pub(crate) slices: Vec<Slice>,
 }
 impl ResourceData {
     pub(crate) fn new(path: &Path, file: &AsepriteFile) -> Self {
-        let mut tmp_sprites: Vec<SpriteData<Texture>> = Vec::new();
+        let mut tmp_sprites: Vec<SpriteData<Image>> = Vec::new();
         let mut tmp_anim_info: Vec<AnimationData> = Vec::new();
         let mut slices: Vec<Slice> = Vec::new();
-        let mut tilesets: Vec<TilesetData<Texture>> = Vec::new();
+        let mut tilesets: Vec<TilesetData<Image>> = Vec::new();
         debug!("Processing Aseprite file: {}", path.display());
         let sprite_offset = tmp_sprites.len();
         for frame in 0..file.num_frames() {
-            tmp_sprites.push(SpriteData::<Texture>::new(&file, frame));
+            tmp_sprites.push(SpriteData::<Image>::new(&file, frame));
         }
-        tmp_anim_info.push(AnimationData::new(&path, &file, sprite_offset));
+        tmp_anim_info.push(AnimationData::new(&file, sprite_offset));
         for tag_id in 0..file.num_tags() {
             let tag = file.tag(tag_id);
-            tmp_anim_info.push(AnimationData::from_tag(&path, sprite_offset, tag));
+            tmp_anim_info.push(AnimationData::from_tag(sprite_offset, tag));
         }
         let mut ase_tilesets =
             tilesets_from(&file).expect("Internal error: Failed to add tilesets from Ase file");
