@@ -3,10 +3,10 @@ use std::time::Duration;
 
 impl From<&Frame> for benimator::Frame {
     fn from(f: &Frame) -> Self {
-        benimator::Frame {
-            duration: Duration::from_millis(f.duration_ms as u64),
-            index: f.sprite.atlas_index,
-        }
+        benimator::Frame::new(
+            f.sprite.atlas_index as usize,
+            Duration::from_millis(f.duration_ms as u64),
+        )
     }
 }
 impl From<&Animation> for benimator::SpriteSheetAnimation {
