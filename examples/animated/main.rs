@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use bevy::{input::system::exit_on_esc_system, prelude::*, sprite::entity::SpriteSheetBundle};
+use bevy::{input::system::exit_on_esc_system, prelude::*, sprite::SpriteSheetBundle};
 use bevy_ase::{
     self,
     asset::{Animation, AseAsset},
@@ -8,10 +8,10 @@ use bevy_ase::{
 };
 
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(loader::AseLoaderDefaultPlugin)
-        .add_plugin(benimator::AnimationPlugin)
+        .add_plugin(benimator::AnimationPlugin::default())
         .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
