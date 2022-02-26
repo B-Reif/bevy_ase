@@ -12,8 +12,7 @@ use std::path::{Path, PathBuf};
 
 fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Image>>> {
     ase.tilesets()
-        .map()
-        .values()
+        .iter()
         .map(|ts| TilesetData::<Image>::from_ase_with_texture(&ase, ts))
         .collect()
 }

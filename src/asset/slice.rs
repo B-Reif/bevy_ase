@@ -1,5 +1,5 @@
 //! Types for slice data.
-pub use asefile::{Slice9, SliceKey, SliceOrigin, SlicePivot, SliceSize};
+pub use asefile::{Slice9, SliceKey};
 use bevy::reflect::TypeUuid;
 
 /// A slice is a region of an Ase sprite with a name and optional user data.
