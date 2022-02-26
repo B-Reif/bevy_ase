@@ -10,8 +10,8 @@ pub(crate) type TilesetResult<T> = std::result::Result<T, TilesetError>;
 
 #[derive(Debug)]
 pub enum TilesetError {
-    MissingId(asefile::TilesetId),
-    NoPixels(asefile::TilesetId),
+    MissingId(u32),
+    NoPixels(u32),
 }
 impl fmt::Display for TilesetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -41,7 +41,11 @@ impl From<TilesetImageError> for TilesetError {
 
 fn texture_from(ase: &AsepriteFile, tileset: &asefile::Tileset) -> TilesetResult<Image> {
     let tileset_id = tileset.id();
-    let image = ase.tileset_image(&tileset_id)?;
+    let tileset = ase
+        .tilesets()
+        .get(tileset_id)
+        .ok_or(TilesetError::MissingId(tileset_id))?;
+    let image = tileset.image();
     let size = Extent3d {
         width: image.width(),
         height: image.height(),
@@ -66,8 +70,8 @@ pub struct TileSize {
 impl TileSize {
     fn from_ase(ase_size: &asefile::TileSize) -> Self {
         Self {
-            width: *ase_size.width(),
-            height: *ase_size.height(),
+            width: ase_size.width(),
+            height: ase_size.height(),
         }
     }
 }
@@ -111,8 +115,8 @@ impl<T> TilesetData<T> {
         let texture = f(ase, ase_tileset)?;
         let ase_size = ase_tileset.tile_size();
         Ok(Self {
-            tile_count: *ase_tileset.tile_count(),
-            tile_size: TileSize::from_ase(ase_size),
+            tile_count: ase_tileset.tile_count(),
+            tile_size: TileSize::from_ase(&ase_size),
             name: ase_tileset.name().to_string(),
             texture,
         })
