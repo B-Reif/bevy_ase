@@ -11,7 +11,7 @@
 //!
 //! This library creates several types of resources:
 //!
-//! - [Texture](bevy::render::texture::Texture) data, which contains the file's images.
+//! - [Image](bevy::render::texture::Image) data, which contains the file's images.
 //! - [TextureAtlas](bevy::sprite::TextureAtlas) data, which contains mapping information for each sprite in a spritesheet.
 //! - [Animation](asset::Animation) data.
 //! - [Slice](asset::slice::Slice) data.
