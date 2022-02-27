@@ -35,7 +35,7 @@ use std::path::Path;
 
 // Initialize and run a bevy app with the default bevy_ase configuration.
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(AseLoaderDefaultPlugin)
         .add_system(load_sprites.system());
