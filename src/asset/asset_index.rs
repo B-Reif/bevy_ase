@@ -31,8 +31,8 @@ use std::path::{Path, PathBuf};
 /// The owning AseFileMap instance provides convenience methods to index a file
 /// and an asset simultaneously. These methods also clone the Handle value before returning.
 ///
-/// [Texture] assets are mapped to their frame index. This map does not include Textures
-/// rendered from [Tileset] assets. To access a Tileset's Texture, use the texture field
+/// [Image](bevy::render::texture::Image) assets are mapped to their frame index. This map does not include Images
+/// rendered from [Tileset] assets. To access a Tileset's Image, use the texture field
 /// on a tileset asset.
 ///
 /// [Animation], [Slice], and Tileset assets are mapped to their string name. There may be
