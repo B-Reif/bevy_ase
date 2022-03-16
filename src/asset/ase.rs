@@ -43,6 +43,6 @@ impl AseAsset {
 /// Afterward, the Loaded instances are replaced with Processed instances.
 #[derive(Debug)]
 pub(crate) enum AseData {
-    Loaded(AsepriteFile),
+    Loaded(Box<AsepriteFile>),
     Processed,
 }
