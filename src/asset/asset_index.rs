@@ -40,44 +40,49 @@ use std::path::{Path, PathBuf};
 /// compose the result with `first()`.
 #[derive(Default, Debug)]
 pub struct AseAssetMap {
-    pub(crate) animations: HashMap<String, Vec<Handle<Animation>>>,
-    pub(crate) slices: HashMap<String, Vec<Handle<Slice>>>,
-    pub(crate) tilesets: HashMap<String, Vec<Handle<Tileset>>>,
+    pub(crate) animations: HashMap<String, Handle<Animation>>,
+    pub(crate) slices: HashMap<String, Handle<Slice>>,
+    pub(crate) tilesets: HashMap<u32, Handle<Tileset>>,
     pub(crate) textures: HashMap<u32, Handle<Image>>,
+    pub(crate) atlas: Handle<TextureAtlas>,
 }
 impl AseAssetMap {
-    /// Returns all animations with the given tag name.
-    pub fn animations(&self, tag_name: &str) -> Option<&Vec<Handle<Animation>>> {
+    /// Returns the animation with the given tag name.
+    pub fn animations(&self, tag_name: &str) -> Option<&Handle<Animation>> {
         self.animations.get(tag_name)
     }
-    /// Returns all slices with the given name.
-    pub fn slices(&self, slice_name: &str) -> Option<&Vec<Handle<Slice>>> {
+    /// Returns the slice with the given name.
+    pub fn slices(&self, slice_name: &str) -> Option<&Handle<Slice>> {
         self.slices.get(slice_name)
     }
-    /// Returns all tilesets with the given name.
-    pub fn tilesets(&self, tileset_name: &str) -> Option<&Vec<Handle<Tileset>>> {
-        self.tilesets.get(tileset_name)
+    /// Returns the tileset with the given id.
+    pub fn tilesets(&self, tileset_id: u32) -> Option<&Handle<Tileset>> {
+        self.tilesets.get(&tileset_id)
     }
     /// Returns the texture for the given frame index.
     pub fn texture(&self, frame_index: u32) -> Option<&Handle<Image>> {
         self.textures.get(&frame_index)
     }
+    /// Returns the texture atlas for the file.
+    pub fn atlas(&self) -> &Handle<TextureAtlas> {
+        &self.atlas
+    }
 
     // Insert API
     pub(crate) fn insert_animation(&mut self, tag_name: String, handle: Handle<Animation>) {
-        let anims = self.animations.entry(tag_name).or_default();
-        anims.push(handle);
+        self.animations.insert(tag_name, handle);
     }
-    pub(crate) fn insert_tileset(&mut self, tileset_name: String, handle: Handle<Tileset>) {
-        let tilesets = self.tilesets.entry(tileset_name).or_default();
-        tilesets.push(handle);
+    pub(crate) fn insert_tileset(&mut self, tileset_id: u32, handle: Handle<Tileset>) {
+        self.tilesets.insert(tileset_id, handle);
     }
     pub(crate) fn insert_slice(&mut self, slice_name: String, handle: Handle<Slice>) {
-        let slices = self.slices.entry(slice_name).or_default();
-        slices.push(handle);
+        self.slices.insert(slice_name, handle);
     }
     pub(crate) fn insert_texture(&mut self, frame_index: u32, handle: Handle<Image>) {
         self.textures.insert(frame_index, handle);
+    }
+    pub(crate) fn insert_atlas(&mut self, handle: Handle<TextureAtlas>) {
+        self.atlas = handle;
     }
 }
 
@@ -123,20 +128,20 @@ impl AseFileMap {
     pub fn get(&self, path: &Path) -> Option<&AseAssetMap> {
         self.0.get(path)
     }
-    pub(crate) fn get_mut(&mut self, path: PathBuf) -> &mut AseAssetMap {
-        let entry = self.0.entry(path);
+    pub(crate) fn get_mut(&mut self, path: &Path) -> &mut AseAssetMap {
+        let entry = self.0.entry(path.to_path_buf());
         entry.or_default()
     }
     /// Returns the first animation in an Ase file with the given tag name.
     pub fn animation(&self, path: &Path, tag_name: &str) -> Option<Handle<Animation>> {
-        self.get(path)?.animations(tag_name).and_then(clone_first)
+        self.get(path)?.animations(tag_name).cloned()
     }
     /// Returns the first slice in an Ase file with the given name.
     pub fn slice(&self, path: &Path, slice_name: &str) -> Option<Handle<Slice>> {
-        self.get(path)?.slices(slice_name).and_then(clone_first)
+        self.get(path)?.slices(slice_name).cloned()
     }
     /// Returns the first tileset in an Ase file with the given name.
-    pub fn tileset(&self, path: &Path, tileset_name: &str) -> Option<Handle<Tileset>> {
-        self.get(path)?.tilesets(tileset_name).and_then(clone_first)
+    pub fn tileset(&self, path: &Path, tileset_id: u32) -> Option<Handle<Tileset>> {
+        self.get(path)?.tilesets(tileset_id).cloned()
     }
 }
