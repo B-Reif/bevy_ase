@@ -80,6 +80,8 @@ impl TileSize {
 #[derive(Debug, TypeUuid)]
 #[uuid = "0e2dbd05-dbad-46c9-a943-395f83dfa4ba"]
 pub struct Tileset {
+    /// Tileset id.
+    pub id: u32,
     /// Number of tiles in this tilset.
     pub tile_count: u32,
     /// Pixel size of this tileset's tiles.
@@ -102,6 +104,7 @@ impl Tileset {
 
 #[derive(Debug)]
 pub(crate) struct TilesetData<T> {
+    pub(crate) id: u32,
     pub(crate) tile_count: u32,
     pub(crate) tile_size: TileSize,
     pub(crate) name: String,
@@ -115,6 +118,7 @@ impl<T> TilesetData<T> {
         let texture = f(ase, ase_tileset)?;
         let ase_size = ase_tileset.tile_size();
         Ok(Self {
+            id: ase_tileset.id(),
             tile_count: ase_tileset.tile_count(),
             tile_size: TileSize::from_ase(&ase_size),
             name: ase_tileset.name().to_string(),

@@ -123,6 +123,7 @@ pub mod benimator;
 /// Adds the [layer_settings](asset::Tileset::layer_settings) method to [Tileset](asset::Tileset).
 pub mod bevy_ecs_tilemap;
 
+pub mod handle_id;
 /// Provides systems and resources for loading Aseprite files.
 ///
 /// The default loader configuration provided by [loader::AseLoaderDefaultPlugin] contains

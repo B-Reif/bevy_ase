@@ -1,10 +1,13 @@
-use crate::asset::{
-    animation::{self, Animation, AnimationData, Frame, SpriteData},
-    slice::Slice,
-    tileset::{TilesetData, TilesetResult},
-    AseAssetMap, Tileset,
-};
 use crate::loader::AseAssetResources;
+use crate::{
+    asset::{
+        animation::{self, Animation, AnimationData, Frame, SpriteData},
+        slice::Slice,
+        tileset::{TilesetData, TilesetResult},
+        AseAssetMap, Tileset,
+    },
+    handle_id,
+};
 use asefile::AsepriteFile;
 use bevy::sprite::TextureAtlasBuilder;
 use bevy::{prelude::*, utils::HashMap};
@@ -18,18 +21,16 @@ fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Image>>> {
 }
 
 fn move_slices(
+    path: &str,
     slice_vec: Vec<Slice>,
     slices: &mut Assets<Slice>,
-    file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut AseAssetMap,
 ) {
     for s in slice_vec {
-        if let Some(ref mut file_assets) = file_assets {
-            let slice_name = s.name.clone();
-            let handle = slices.add(s);
-            file_assets.insert_slice(slice_name, handle);
-        } else {
-            slices.add(s);
-        }
+        let slice_id = handle_id::slice(path, &s.name);
+        let slice_name = s.name.clone();
+        let handle = slices.set(slice_id, s);
+        file_assets.insert_slice(slice_name, handle);
     }
 }
 
@@ -39,33 +40,32 @@ struct TilesetImportResources<'a> {
 }
 
 fn move_tilesets(
+    path: &str,
     tileset_data: Vec<TilesetData<Image>>,
     resources: TilesetImportResources,
-    file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut AseAssetMap,
 ) {
     let TilesetImportResources { textures, tilesets } = resources;
     for ts in tileset_data.into_iter() {
-        // ts.move_into_bevy(textures, tilesets);
         let TilesetData {
+            id,
             tile_count,
             tile_size,
             name,
             texture,
         } = ts;
-        let tex_handle = textures.add(texture);
+        let image_handle_id = handle_id::tileset_image(path, id);
+        let tex_handle = textures.set(image_handle_id, texture);
         let tileset = Tileset {
+            id,
             name,
             texture: tex_handle,
             tile_count,
             tile_size,
         };
-        if let Some(ref mut file_assets) = file_assets {
-            let tileset_name = tileset.name.clone();
-            let handle = tilesets.add(tileset);
-            file_assets.insert_tileset(tileset_name, handle);
-        } else {
-            tilesets.add(tileset);
-        }
+        let tileset_handle_id = handle_id::tileset(path, id);
+        let handle = tilesets.set(tileset_handle_id, tileset);
+        file_assets.insert_tileset(id, handle);
     }
 }
 
@@ -78,9 +78,10 @@ struct AnimationImportData<'a> {
 }
 
 fn move_animations(
+    path: &str,
     data: AnimationImportData,
     animations: &mut Assets<Animation>,
-    file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut AseAssetMap,
 ) {
     let AnimationImportData {
         animation_data,
@@ -90,59 +91,58 @@ fn move_animations(
     } = data;
 
     for anim_data in animation_data.into_iter() {
-        let mut frames = Vec::with_capacity(anim_data.sprites.len());
-        for sprite_id in &anim_data.sprites {
-            let sprite_id = *sprite_id;
-            let tmp_sprite = &sprite_data[sprite_id];
-            let atlas_index = atlas
-                .get_texture_index(&tmp_sprite.texture)
-                .expect("Failed to get texture from atlas");
-            frames.push(Frame {
-                sprite: animation::Sprite {
-                    atlas_index: atlas_index as u32,
-                },
-                duration_ms: tmp_sprite.duration,
-            });
-        }
-        let handle = animations.add(Animation::new(frames, atlas_handle.clone()));
         if let Some(tag_name) = anim_data.tag_name {
-            if let Some(ref mut file_assets) = file_assets {
-                file_assets.insert_animation(tag_name, handle);
+            let mut frames = Vec::with_capacity(anim_data.sprites.len());
+            for sprite_id in &anim_data.sprites {
+                let sprite_id = *sprite_id;
+                let tmp_sprite = &sprite_data[sprite_id];
+                let atlas_index = atlas
+                    .get_texture_index(&tmp_sprite.texture)
+                    .expect("Failed to get texture from atlas");
+                frames.push(Frame {
+                    sprite: animation::Sprite {
+                        atlas_index: atlas_index as u32,
+                    },
+                    duration_ms: tmp_sprite.duration,
+                });
             }
+            let anim_id = handle_id::animation(path, &tag_name);
+            let asset = Animation::new(frames, atlas_handle.clone());
+            let handle = animations.set(anim_id, asset);
+            file_assets.insert_animation(tag_name, handle);
         }
     }
 }
 
 struct SpriteImportResources<'a> {
-    textures: &'a mut Assets<Image>,
+    images: &'a mut Assets<Image>,
     atlases: &'a mut Assets<TextureAtlas>,
 }
 
 fn move_sprites(
+    path: &str,
     sprites: Vec<SpriteData<Image>>,
     resources: SpriteImportResources,
-    file_assets: &mut Option<&mut AseAssetMap>,
+    file_assets: &mut AseAssetMap,
 ) -> (Vec<SpriteData<Handle<Image>>>, Handle<TextureAtlas>) {
-    let SpriteImportResources { textures, atlases } = resources;
+    let SpriteImportResources { images, atlases } = resources;
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
     let sprite_handles: Vec<SpriteData<Handle<Image>>> = sprites
         .into_iter()
         .map(
             |SpriteData {
                  frame,
-                 texture: tex,
+                 texture: image,
                  duration,
              }| {
-                let tex_handle = textures.add(tex);
-                if let Some(ref mut file_assets) = file_assets {
-                    file_assets.insert_texture(frame, tex_handle.clone());
-                }
-                let texture = textures
-                    .get(&tex_handle)
-                    .expect("Failed to get texture from handle");
-                texture_atlas_builder.add_texture(tex_handle.clone_weak(), texture);
+                let image_handle_id = handle_id::frame_image(path, frame);
+                let image_handle = images.set(image_handle_id, image);
+                file_assets.insert_texture(frame, image_handle.clone());
+                // Expect: We just inserted this image above
+                let image = images.get(&image_handle).expect("Image missing");
+                texture_atlas_builder.add_texture(image_handle.clone_weak(), image);
                 SpriteData {
-                    texture: tex_handle,
+                    texture: image_handle,
                     frame,
                     duration,
                 }
@@ -150,9 +150,11 @@ fn move_sprites(
         )
         .collect();
     let atlas = texture_atlas_builder
-        .finish(textures)
+        .finish(images)
         .expect("Creating texture atlas failed");
-    let atlas_handle = atlases.add(atlas);
+    let atlas_handle_id = handle_id::atlas(path);
+    let atlas_handle = atlases.set(atlas_handle_id, atlas);
+    file_assets.insert_atlas(atlas_handle.clone());
     (sprite_handles, atlas_handle)
 }
 
@@ -212,25 +214,34 @@ impl ResourceData {
             slices,
         }
     }
-    pub(crate) fn move_into_resources(self, path: PathBuf, resources: &mut AseAssetResources) {
+    pub(crate) fn move_into_resources(self, path_buf: PathBuf, resources: &mut AseAssetResources) {
         let data = self;
+        let path_str = path_buf.to_str().expect("Expected valid Unicode path!");
         let (textures, animations, atlases, tilesets, slices, index) = resources;
 
-        let mut file_assets = index.as_deref_mut().map(|idk| idk.get_mut(path));
+        let mut file_assets = index
+            .as_deref_mut()
+            .map(|ase_file_map| ase_file_map.get_mut(&path_buf))
+            .expect("Expected a file map!");
 
         if let Some(slices) = slices {
-            move_slices(data.slices, slices, &mut file_assets);
+            move_slices(path_str, data.slices, slices, file_assets);
         }
 
         if let Some(tilesets) = tilesets {
             let resources = TilesetImportResources { textures, tilesets };
-            move_tilesets(data.tilesets, resources, &mut file_assets);
+            move_tilesets(path_str, data.tilesets, resources, file_assets);
         }
 
         // Move sprites
         if let Some(atlases) = atlases {
-            let resources = SpriteImportResources { textures, atlases };
-            let (sprites, atlas_handle) = move_sprites(data.sprites, resources, &mut file_assets);
+            let resources = SpriteImportResources {
+                images: textures,
+                atlases,
+            };
+
+            let (sprites, atlas_handle) =
+                move_sprites(path_str, data.sprites, resources, &mut file_assets);
             let atlas = atlases.get(&atlas_handle).unwrap();
             // Move animations
             if let Some(animations) = animations {
@@ -241,7 +252,7 @@ impl ResourceData {
                     atlas_handle,
                 };
 
-                move_animations(data, animations, &mut file_assets);
+                move_animations(path_str, data, animations, &mut file_assets);
             }
         }
     }

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_ase"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Bruce Reif", "alpine_alpaca <alpine.alpaca.games@gmail.com>", ]
 edition = "2021"
 
