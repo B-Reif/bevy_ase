@@ -102,8 +102,9 @@ impl AssetLoader for AseAssetLoader {
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
             debug!("Loading/parsing asefile: {}", load_context.path().display());
+            let data = AsepriteFile::read(bytes)?;
             let ase = AseAsset {
-                data: AseData::Loaded(AsepriteFile::read(bytes)?),
+                data: AseData::Loaded(Box::new(data)),
                 name: load_context.path().to_owned(),
             };
             load_context.set_default_asset(LoadedAsset::new(ase));
@@ -222,8 +223,8 @@ impl Loader {
             let mut loaded_ase = AseData::Processed;
             std::mem::swap(&mut ase_asset.data, &mut loaded_ase);
 
-            if let AseData::Loaded(ase) = loaded_ase {
-                ase_files.push((ase_asset.name.clone(), ase));
+            if let AseData::Loaded(boxed_ase) = loaded_ase {
+                ase_files.push((ase_asset.name.clone(), *boxed_ase));
             }
         }
 

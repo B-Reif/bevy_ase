@@ -1,7 +1,7 @@
 //! Index for assets created by this library.
 use super::{animation::Animation, slice::Slice, tileset::Tileset};
+use bevy::prelude::*;
 use bevy::utils::HashMap;
-use bevy::{asset::Asset, prelude::*};
 use std::path::{Path, PathBuf};
 
 /// Provides a map to [Handles](Handle) for an Ase file's assets.
@@ -10,19 +10,23 @@ use std::path::{Path, PathBuf};
 /// use the AseFileMap as a system parameter, and index each AseAssetMap by
 /// using the file's path as a key.
 ///
+/// NB: Animations and slices are keyed by their name. If a file has more than one
+/// animation or slice with the same name, only one of them will be stored and
+/// the others will be dropped!
+///
 /// # Examples
 ///
 /// ```
 /// use bevy_ase::asset::{AseAssetMap, Animation, Tileset};
 /// use bevy::asset::Handle;
-/// // Get all animations in this file with the name "foo".
-/// fn get_foo_animations(ase_asset_map: &AseAssetMap) -> Option<&Vec<Handle<Animation>>> {
-///     ase_asset_map.animations("foo")
+/// // Get the animation in this file with the name "foo".
+/// fn get_foo_animation(ase_asset_map: &AseAssetMap) -> Option<&Handle<Animation>> {
+///     ase_asset_map.animation("foo")
 /// }
 ///
-/// // Get the first tileset in this file with the name "bar".
+/// // Get the tileset in this file with id `1`.
 /// fn get_bar_tileset(ase_asset_map: &AseAssetMap) -> Option<Handle<Tileset>> {
-///     ase_asset_map.tilesets("foo")?.first().map(Handle::clone)
+///     ase_asset_map.tileset(1).map(Handle::clone)
 /// }
 /// ```
 ///
@@ -48,15 +52,15 @@ pub struct AseAssetMap {
 }
 impl AseAssetMap {
     /// Returns the animation with the given tag name.
-    pub fn animations(&self, tag_name: &str) -> Option<&Handle<Animation>> {
+    pub fn animation(&self, tag_name: &str) -> Option<&Handle<Animation>> {
         self.animations.get(tag_name)
     }
     /// Returns the slice with the given name.
-    pub fn slices(&self, slice_name: &str) -> Option<&Handle<Slice>> {
+    pub fn slice(&self, slice_name: &str) -> Option<&Handle<Slice>> {
         self.slices.get(slice_name)
     }
     /// Returns the tileset with the given id.
-    pub fn tilesets(&self, tileset_id: u32) -> Option<&Handle<Tileset>> {
+    pub fn tileset(&self, tileset_id: u32) -> Option<&Handle<Tileset>> {
         self.tilesets.get(&tileset_id)
     }
     /// Returns the texture for the given frame index.
@@ -86,11 +90,6 @@ impl AseAssetMap {
     }
 }
 
-#[allow(clippy::ptr_arg)]
-fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
-    vec.first().map(Handle::clone)
-}
-
 /// Resource type. Provides map access to Ase asset [Handles](Handle),
 /// keyed by the Ase file's path.
 ///
@@ -114,8 +113,7 @@ fn clone_first<T: Asset>(vec: &Vec<Handle<T>>) -> Option<Handle<T>> {
 /// fn get_foo_bar_long(ase_file_map: AseFileMap) -> Option<Handle<Animation>> {
 ///     ase_file_map
 ///         .get(Path::new("sprites/foo.aseprite"))?
-///         .animations("bar")?
-///         .first()
+///         .animation("bar")
 ///         .map(Handle::clone)
 /// }
 ///
@@ -134,14 +132,14 @@ impl AseFileMap {
     }
     /// Returns the first animation in an Ase file with the given tag name.
     pub fn animation(&self, path: &Path, tag_name: &str) -> Option<Handle<Animation>> {
-        self.get(path)?.animations(tag_name).cloned()
+        self.get(path)?.animation(tag_name).cloned()
     }
     /// Returns the first slice in an Ase file with the given name.
     pub fn slice(&self, path: &Path, slice_name: &str) -> Option<Handle<Slice>> {
-        self.get(path)?.slices(slice_name).cloned()
+        self.get(path)?.slice(slice_name).cloned()
     }
     /// Returns the first tileset in an Ase file with the given name.
     pub fn tileset(&self, path: &Path, tileset_id: u32) -> Option<Handle<Tileset>> {
-        self.get(path)?.tilesets(tileset_id).cloned()
+        self.get(path)?.tileset(tileset_id).cloned()
     }
 }

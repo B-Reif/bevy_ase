@@ -14,10 +14,8 @@ use bevy::{prelude::*, utils::HashMap};
 use std::path::{Path, PathBuf};
 
 fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Image>>> {
-    ase.tilesets()
-        .iter()
-        .map(|ts| TilesetData::<Image>::from_ase_with_texture(&ase, ts))
-        .collect()
+    let f = |t| TilesetData::<Image>::from_ase_with_texture(ase, t);
+    ase.tilesets().iter().map(f).collect()
 }
 
 fn move_slices(
@@ -192,15 +190,15 @@ impl ResourceData {
         debug!("Processing Aseprite file: {}", path.display());
         let sprite_offset = tmp_sprites.len();
         for frame in 0..file.num_frames() {
-            tmp_sprites.push(SpriteData::<Image>::new(&file, frame));
+            tmp_sprites.push(SpriteData::<Image>::new(file, frame));
         }
-        tmp_anim_info.push(AnimationData::new(&file, sprite_offset));
+        tmp_anim_info.push(AnimationData::new(file, sprite_offset));
         for tag_id in 0..file.num_tags() {
             let tag = file.tag(tag_id);
             tmp_anim_info.push(AnimationData::from_tag(sprite_offset, tag));
         }
         let mut ase_tilesets =
-            tilesets_from(&file).expect("Internal error: Failed to add tilesets from Ase file");
+            tilesets_from(file).expect("Internal error: Failed to add tilesets from Ase file");
         tilesets.append(&mut ase_tilesets);
         for ase_slice in file.slices().iter() {
             // let slice_id = SliceId::new(idx as u32);
@@ -219,7 +217,7 @@ impl ResourceData {
         let path_str = path_buf.to_str().expect("Expected valid Unicode path!");
         let (textures, animations, atlases, tilesets, slices, index) = resources;
 
-        let mut file_assets = index
+        let file_assets = index
             .as_deref_mut()
             .map(|ase_file_map| ase_file_map.get_mut(&path_buf))
             .expect("Expected a file map!");
@@ -241,7 +239,7 @@ impl ResourceData {
             };
 
             let (sprites, atlas_handle) =
-                move_sprites(path_str, data.sprites, resources, &mut file_assets);
+                move_sprites(path_str, data.sprites, resources, file_assets);
             let atlas = atlases.get(&atlas_handle).unwrap();
             // Move animations
             if let Some(animations) = animations {
@@ -252,7 +250,7 @@ impl ResourceData {
                     atlas_handle,
                 };
 
-                move_animations(path_str, data, animations, &mut file_assets);
+                move_animations(path_str, data, animations, file_assets);
             }
         }
     }
