@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.6"
+bevy = "0.7"
 # asefile = "0.3.2"
 asefile = { git = "https://github.com/B-Reif/asefile", branch = "fix-tileset-inner" }
 anyhow = "1.0"

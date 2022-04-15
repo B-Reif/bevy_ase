@@ -46,7 +46,7 @@ impl Plugin for AseLoaderDefaultPlugin {
             .init_resource::<Loader>()
             .init_resource::<AseFileMap>()
             .init_asset_loader::<AseAssetLoader>()
-            .add_system(ase_importer.system());
+            .add_system(ase_importer);
     }
 }
 
