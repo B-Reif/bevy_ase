@@ -1,5 +1,5 @@
 use crate::asset::{TileSize, Tileset};
-use bevy::math::{UVec2, Vec2};
+use bevy::prelude::Vec2;
 use bevy_ecs_tilemap::prelude::*;
 
 impl From<TileSize> for Vec2 {
@@ -16,22 +16,22 @@ impl Tileset {
     /// ```
     /// #[cfg(feature = "bevy_ecs_tilemap")]
     /// use bevy_ase::asset::Tileset;
-    /// use bevy_ecs_tilemap::LayerSettings;
-    /// use bevy::math::UVec2;
+    /// use bevy_ecs_tilemap::{MapSize, ChunkSize, LayerSettings};
     ///
     /// // Create new layer settings from a tileset, with specified map size and chunk size.
     /// fn my_layer_settings(tileset: &Tileset) -> LayerSettings {
-    ///     let map_size = UVec2::new(30, 30);
-    ///     let chunk_size = UVec2::new(15, 15);
+    ///     let map_size = MapSize(30, 30);
+    ///     let chunk_size = ChunkSize(15, 15);
     ///     tileset.layer_settings(map_size, chunk_size)       
     /// }
     /// ```
-    pub fn layer_settings(&self, map_size: UVec2, chunk_size: UVec2) -> LayerSettings {
+    pub fn layer_settings(&self, map_size: MapSize, chunk_size: ChunkSize) -> LayerSettings {
+        let texture_size = self.texture_size();
         LayerSettings::new(
             map_size,
             chunk_size,
-            Vec2::new(self.tile_size.width as f32, self.tile_size.height as f32),
-            self.texture_size(),
+            TileSize(self.tile_size.width as f32, self.tile_size.height as f32),
+            TextureSize(texture_size.x, texture_size.y),
         )
     }
 }

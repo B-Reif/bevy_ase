@@ -27,7 +27,7 @@ use std::{
 /// use bevy::prelude::*;
 /// use bevy_ase::loader::AseLoaderDefaultPlugin;
 /// fn app() {
-///     App::build()
+///     App::new()
 ///         .add_plugins(DefaultPlugins)
 ///         // Add the default plugin to the bevy app build.
 ///         .add_plugin(AseLoaderDefaultPlugin);
@@ -46,7 +46,7 @@ impl Plugin for AseLoaderDefaultPlugin {
             .init_resource::<Loader>()
             .init_resource::<AseFileMap>()
             .init_asset_loader::<AseAssetLoader>()
-            .add_system(ase_importer.system());
+            .add_system(ase_importer);
     }
 }
 
@@ -63,7 +63,7 @@ const DEFAULT_EXTENSIONS: &[&str; 2] = &["aseprite", "ase"];
 /// use bevy::prelude::*;
 /// use bevy_ase::loader::AseAssetLoader;
 ///
-/// fn build(app: &mut AppBuilder) {
+/// fn build(app: &mut App) {
 ///     app.init_asset_loader::<AseAssetLoader>();
 /// }
 /// ```
@@ -73,7 +73,7 @@ const DEFAULT_EXTENSIONS: &[&str; 2] = &["aseprite", "ase"];
 /// use bevy::prelude::*;
 /// use bevy_ase::loader::AseAssetLoader;
 ///
-/// fn build(app: &mut AppBuilder) {
+/// fn build(app: &mut App) {
 ///     let my_loader = AseAssetLoader {
 ///         extensions: &["aseprite", "my_custom_extension"]
 ///     };
@@ -127,7 +127,7 @@ impl AssetLoader for AseAssetLoader {
 /// use bevy_ase::loader::Loader;
 /// // Adds a Loader instance to the app's resources.
 /// // The AseLoaderDefaultPlugin already does this by default.
-/// fn build(app: &mut AppBuilder) {
+/// fn build(app: &mut App) {
 ///     app.init_resource::<Loader>();
 /// }
 /// ```
@@ -284,7 +284,7 @@ pub(crate) type AseAssetResources<'a> = (
 /// // Creates a Bevy app and adds the ase_importer system.
 /// // This system is already added by default in AseLoaderPlugin.
 /// fn app() {
-///     App::build().add_system(ase_importer.system());
+///     App::new().add_system(ase_importer);
 /// }
 /// ```
 pub fn ase_importer(

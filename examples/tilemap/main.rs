@@ -10,18 +10,18 @@ use bevy_ase::{
 use bevy_ecs_tilemap::prelude::*;
 
 fn main() {
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(loader::AseLoaderDefaultPlugin)
-        .add_system(exit_on_esc_system.system())
+        .add_system(exit_on_esc_system)
         .add_state(AppState::Loading)
-        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
         .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites.system()),
+            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites),
         )
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera.system()))
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles))
         .run()
 }
 
@@ -64,7 +64,7 @@ fn set_tiles(layer_builder: &mut LayerBuilder<TileBundle>) {
                 ..Tile::default()
             };
             let tile_pos = UVec2::new(x as u32, y as u32);
-            layer_builder.set_tile(tile_pos, tile.into()).unwrap();
+            layer_builder.set_tile(tile_pos.into(), tile.into()).unwrap();
         }
     }
 }
@@ -77,16 +77,16 @@ fn spawn_tiles(
 ) {
     for (_, tileset) in tilesets.iter() {
         let texture_handle = tileset.texture.clone();
-        let material_handle = materials.add(ColorMaterial::texture(texture_handle));
+        //let material_handle = materials.add(ColorMaterial::from(texture_handle));
         // The layer_settings method of Tileset is implemented in the "bevy_ecs_tilemap" feature.
-        let settings = tileset.layer_settings(UVec2::new(3, 3), UVec2::new(3, 3));
+        let settings = tileset.layer_settings(MapSize(3, 3), ChunkSize(3, 3));
 
         let (mut layer_builder, layer_entity) =
             LayerBuilder::<TileBundle>::new(&mut commands, settings, 0u16, 0u16);
 
         set_tiles(&mut layer_builder);
 
-        map_query.build_layer(&mut commands, layer_builder, material_handle);
+        map_query.build_layer(&mut commands, layer_builder, texture_handle);
 
         let map_entity = commands.spawn().id();
         let mut map = Map::new(0u16, map_entity);

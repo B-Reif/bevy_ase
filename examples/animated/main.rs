@@ -12,13 +12,13 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(loader::AseLoaderDefaultPlugin)
         .add_plugin(benimator::AnimationPlugin::default())
-        .add_system(exit_on_esc_system.system())
+        .add_system(exit_on_esc_system)
         .add_state(AppState::Loading)
-        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
         .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites.system()),
+            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites),
         )
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_sprites.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_sprites))
         .run()
 }
 
