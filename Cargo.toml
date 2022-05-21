@@ -23,4 +23,3 @@ required-features = ["benimator"]
 [[example]]
 name = "tilemap"
 required-features = ["bevy_ecs_tilemap"]
-
