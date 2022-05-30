@@ -11,8 +11,8 @@ bevy = "0.7"
 # asefile = "0.3.2"
 asefile = { git = "https://github.com/B-Reif/asefile", branch = "fix-tileset-inner" }
 anyhow = "1.0"
-benimator = { version = "2.0", optional = true }
-bevy_ecs_tilemap = { version = "0.5", optional = true }
+benimator = { version = "3.0", optional = true }
+bevy_ecs_tilemap = { version = "0.6", optional = true }
 
 [profile.dev.package."*"]
 opt-level = 2

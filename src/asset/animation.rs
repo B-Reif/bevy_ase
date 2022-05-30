@@ -44,7 +44,7 @@ pub(crate) struct SpriteData<T> {
 }
 impl SpriteData<Image> {
     pub(crate) fn new(ase: &AsepriteFile, frame: u32) -> Self {
-        let img = ase.frame(frame).image();
+        let img = &ase.frame(frame).image();
         let size = Extent3d {
             width: ase.width() as u32,
             height: ase.height() as u32,

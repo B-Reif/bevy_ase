@@ -285,7 +285,7 @@ pub(crate) type AseAssetResources<'a> = (
 /// // Creates a Bevy app and adds the ase_importer system.
 /// // This system is already added by default in AseLoaderPlugin.
 /// fn app() {
-///     App::new().add_system(ase_importer.system());
+///     App::new().add_system(ase_importer);
 /// }
 /// ```
 pub fn ase_importer(
