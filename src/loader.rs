@@ -212,7 +212,7 @@ impl Loader {
         let mut ase_files: Vec<(PathBuf, AsepriteFile)> = Vec::with_capacity(handles.len());
         for h in &handles {
             let ase_asset = aseprites
-                .get_mut(h.clone_weak())
+                .get_mut(&h)
                 .expect("Failed to get aseprite from handle");
 
             // We actually remove the AsepriteFile from the AsepriteAsset so
@@ -290,7 +290,6 @@ pub(crate) type AseAssetResources<'a> = (
 /// ```
 pub fn ase_importer(
     mut loader: ResMut<Loader>,
-    task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AseAsset>>,
     asset_server: Res<AssetServer>,
     resources: AseAssetResources,
@@ -300,6 +299,7 @@ pub fn ase_importer(
         debug!("Processing asefiles (batches: {})", pending);
     }
     if loader.all_todo_handles_ready(&asset_server) {
+        let task_pool = AsyncComputeTaskPool::get();
         loader.spawn_tasks(&task_pool, &mut aseassets);
     }
     loader.move_finished_into_resources(resources);
