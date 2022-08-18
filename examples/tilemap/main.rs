@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use bevy::{input::system::exit_on_esc_system, prelude::*};
+use bevy::prelude::*;
 use bevy_ase::{
     self,
     asset::{AseAsset, Tileset},
@@ -14,14 +14,13 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(loader::AseLoaderDefaultPlugin)
-        .add_system(exit_on_esc_system.system())
         .add_state(AppState::Loading)
-        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
         .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites.system()),
+            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites),
         )
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera.system()))
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles))
         .run()
 }
 
@@ -48,23 +47,27 @@ pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, aseloader: Res<
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle({
-        let mut b = OrthographicCameraBundle::new_2d();
-        b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
+        let mut b = Camera2dBundle::default();
+        b.projection.scale = 1.0 / 3.0; // scale to 3x
         b
     });
 }
 
-fn set_tiles(layer_builder: &mut LayerBuilder<TileBundle>) {
+fn set_tiles(commands: &mut Commands, map_entity: Entity, tile_storage: &mut TileStorage) {
     for y in 0..3 {
         let y_offset = 7 - (y * 3);
         for x in 0..3 {
             let texture_index = y_offset + x;
-            let tile = Tile {
-                texture_index,
-                ..Tile::default()
-            };
-            let tile_pos = UVec2::new(x as u32, y as u32);
-            layer_builder.set_tile(tile_pos, tile.into()).unwrap();
+            let tile_pos = TilePos::new(x as u32, y as u32);
+            let tile = commands
+                .spawn_bundle(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(map_entity),
+                    texture: TileTexture(texture_index),
+                    ..TileBundle::default()
+                })
+                .id();
+            tile_storage.set(&tile_pos, Some(tile));
         }
     }
 }
@@ -72,28 +75,25 @@ fn set_tiles(layer_builder: &mut LayerBuilder<TileBundle>) {
 fn spawn_tiles(
     mut commands: Commands,
     tilesets: Res<Assets<Tileset>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut map_query: MapQuery,
 ) {
     for (_, tileset) in tilesets.iter() {
         let texture_handle = tileset.texture.clone();
-        let material_handle = materials.add(ColorMaterial::texture(texture_handle));
-        // The layer_settings method of Tileset is implemented in the "bevy_ecs_tilemap" feature.
-        let settings = tileset.layer_settings(UVec2::new(3, 3), UVec2::new(3, 3));
 
-        let (mut layer_builder, layer_entity) =
-            LayerBuilder::<TileBundle>::new(&mut commands, settings, 0u16, 0u16);
-
-        set_tiles(&mut layer_builder);
-
-        map_query.build_layer(&mut commands, layer_builder, material_handle);
-
+        let map_size = TilemapSize { x: 3, y: 3 };
         let map_entity = commands.spawn().id();
-        let mut map = Map::new(0u16, map_entity);
-        map.add_layer(&mut commands, 0u16, layer_entity);
+        let mut tile_storage = TileStorage::empty(map_size);
+
+        set_tiles(&mut commands, map_entity, &mut tile_storage);
+
         commands
             .entity(map_entity)
-            .insert(map)
-            .insert(GlobalTransform::default());
+            .insert_bundle(TilemapBundle {
+                grid_size: (&tileset.tile_size).into(),
+                size: map_size,
+                storage: tile_storage,
+                texture: TilemapTexture(texture_handle),
+                tile_size: (&tileset.tile_size).into(),
+                ..Default::default()
+            });
     }
 }
