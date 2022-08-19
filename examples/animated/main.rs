@@ -1,24 +1,29 @@
 use std::path::Path;
 
-use bevy::{input::system::exit_on_esc_system, prelude::*, sprite::SpriteSheetBundle};
+use bevy::{prelude::*, reflect::TypeUuid, sprite::SpriteSheetBundle};
 use bevy_ase::{
     self,
     asset::{Animation, AseAsset},
     loader::{self, Loader},
 };
 
+#[derive(TypeUuid, Deref)]
+#[uuid = "33fd3d9b-dd1e-4d38-9b82-30751b29c72c"]
+pub struct SpriteSheetAnimation(benimator::Animation);
+
+#[derive(Default, Component, Deref, DerefMut)]
+pub struct SpriteSheetAnimationState(benimator::State);
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(loader::AseLoaderDefaultPlugin)
-        .add_plugin(benimator::AnimationPlugin::default())
-        .add_system(exit_on_esc_system.system())
+        .add_asset::<SpriteSheetAnimation>()
         .add_state(AppState::Loading)
-        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites.system()))
-        .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites.system()),
-        )
-        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_sprites.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
+        .add_system_set(SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites))
+        .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_sprites))
+        .add_system_set(SystemSet::on_update(AppState::Game).with_system(animate))
         .run()
 }
 
@@ -47,11 +52,11 @@ pub fn check_loading_sprites(mut state: ResMut<State<AppState>>, ase_loader: Res
 pub fn spawn_sprites(
     mut commands: Commands,
     animations: Res<Assets<Animation>>,
-    mut sprite_sheet_animations: ResMut<Assets<benimator::SpriteSheetAnimation>>,
+    mut sprite_sheet_animations: ResMut<Assets<SpriteSheetAnimation>>,
 ) {
     commands.spawn_bundle({
-        let mut b = OrthographicCameraBundle::new_2d();
-        b.orthographic_projection.scale = 1.0 / 3.0; // scale to 3x
+        let mut b = Camera2dBundle::default();
+        b.projection.scale = 1.0 / 3.0; // scale to 3x
         b
     });
 
@@ -59,8 +64,8 @@ pub fn spawn_sprites(
     for (idx, (_id, anim)) in anims {
         let texture_atlas = anim.atlas();
         // The "benimator" feature provides a From implementation to convert animations.
-        let anim: benimator::SpriteSheetAnimation = anim.into();
-        let anim_handle = sprite_sheet_animations.add(anim);
+        let anim: benimator::Animation = anim.into();
+        let anim_handle = sprite_sheet_animations.add(SpriteSheetAnimation(anim));
         let x_position = idx as f32 * 50.0;
 
         commands
@@ -70,6 +75,25 @@ pub fn spawn_sprites(
                 ..Default::default()
             })
             .insert(anim_handle)
-            .insert(benimator::Play);
+            .insert(SpriteSheetAnimationState::default());
+    }
+}
+
+pub fn animate(
+    time: Res<Time>,
+    animations: Res<Assets<SpriteSheetAnimation>>,
+    mut query: Query<(
+        &mut SpriteSheetAnimationState,
+        &mut TextureAtlasSprite,
+        &Handle<SpriteSheetAnimation>,
+    )>,
+) {
+    for (mut state, mut texture, handle) in query.iter_mut() {
+        let animation = match animations.get(handle) {
+            Some(anim) => anim,
+            None => continue,
+        };
+        state.update(animation, time.delta());
+        texture.index = state.frame_index();
     }
 }

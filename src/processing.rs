@@ -9,6 +9,7 @@ use crate::{
     handle_id,
 };
 use asefile::AsepriteFile;
+use bevy::render::texture::ImageSampler;
 use bevy::sprite::TextureAtlasBuilder;
 use bevy::{prelude::*, utils::HashMap};
 use std::path::{Path, PathBuf};
@@ -150,6 +151,11 @@ fn move_sprites(
     let atlas = texture_atlas_builder
         .finish(images)
         .expect("Creating texture atlas failed");
+    // Since we likely are dealing with pixel art, default to nearest image sampling
+    images
+        .get_mut(&atlas.texture)
+        .expect("Texture atlas texture missing")
+        .sampler_descriptor = ImageSampler::nearest();
     let atlas_handle_id = handle_id::atlas(path);
     let atlas_handle = atlases.set(atlas_handle_id, atlas);
     file_assets.insert_atlas(atlas_handle.clone());
