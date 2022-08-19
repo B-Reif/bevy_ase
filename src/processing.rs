@@ -9,10 +9,10 @@ use crate::{
     handle_id,
 };
 use asefile::AsepriteFile;
+use bevy::render::texture::ImageSampler;
 use bevy::sprite::TextureAtlasBuilder;
 use bevy::{prelude::*, utils::HashMap};
 use std::path::{Path, PathBuf};
-use bevy::render::texture::ImageSampler;
 
 fn tilesets_from(ase: &AsepriteFile) -> TilesetResult<Vec<TilesetData<Image>>> {
     let f = |t| TilesetData::<Image>::from_ase_with_texture(ase, t);

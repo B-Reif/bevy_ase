@@ -21,9 +21,7 @@ fn main() {
         .add_asset::<SpriteSheetAnimation>()
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
-        .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites),
-        )
+        .add_system_set(SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites))
         .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_sprites))
         .add_system_set(SystemSet::on_update(AppState::Game).with_system(animate))
         .run()

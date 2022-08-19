@@ -16,9 +16,7 @@ fn main() {
         .add_plugin(loader::AseLoaderDefaultPlugin)
         .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::Loading).with_system(load_sprites))
-        .add_system_set(
-            SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites),
-        )
+        .add_system_set(SystemSet::on_update(AppState::Loading).with_system(check_loading_sprites))
         .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_camera))
         .add_system_set(SystemSet::on_enter(AppState::Game).with_system(spawn_tiles))
         .run()
@@ -72,10 +70,7 @@ fn set_tiles(commands: &mut Commands, map_entity: Entity, tile_storage: &mut Til
     }
 }
 
-fn spawn_tiles(
-    mut commands: Commands,
-    tilesets: Res<Assets<Tileset>>,
-) {
+fn spawn_tiles(mut commands: Commands, tilesets: Res<Assets<Tileset>>) {
     for (_, tileset) in tilesets.iter() {
         let texture_handle = tileset.texture.clone();
 
@@ -85,15 +80,13 @@ fn spawn_tiles(
 
         set_tiles(&mut commands, map_entity, &mut tile_storage);
 
-        commands
-            .entity(map_entity)
-            .insert_bundle(TilemapBundle {
-                grid_size: (&tileset.tile_size).into(),
-                size: map_size,
-                storage: tile_storage,
-                texture: TilemapTexture(texture_handle),
-                tile_size: (&tileset.tile_size).into(),
-                ..Default::default()
-            });
+        commands.entity(map_entity).insert_bundle(TilemapBundle {
+            grid_size: (&tileset.tile_size).into(),
+            size: map_size,
+            storage: tile_storage,
+            texture: TilemapTexture(texture_handle),
+            tile_size: (&tileset.tile_size).into(),
+            ..Default::default()
+        });
     }
 }
