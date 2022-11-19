@@ -132,7 +132,7 @@ impl AssetLoader for AseAssetLoader {
 ///     app.init_resource::<Loader>();
 /// }
 /// ```
-
+#[derive(Resource)]
 pub struct Loader {
     todo_handles: Vec<Handle<AseAsset>>,
     in_progress: Arc<AtomicU32>,
@@ -194,7 +194,7 @@ impl Loader {
     }
 
     fn all_todo_handles_ready(&self, asset_server: &AssetServer) -> bool {
-        let handles = self.todo_handles.iter().map(|h| h.id);
+        let handles = self.todo_handles.iter().map(|h| h.id());
         asset_server.get_group_load_state(handles) == LoadState::Loaded
     }
 
@@ -212,7 +212,7 @@ impl Loader {
         let mut ase_files: Vec<(PathBuf, AsepriteFile)> = Vec::with_capacity(handles.len());
         for h in &handles {
             let ase_asset = aseprites
-                .get_mut(h.clone_weak())
+                .get_mut(&h.clone_weak())
                 .expect("Failed to get aseprite from handle");
 
             // We actually remove the AsepriteFile from the AsepriteAsset so
@@ -290,11 +290,12 @@ pub(crate) type AseAssetResources<'a> = (
 /// ```
 pub fn ase_importer(
     mut loader: ResMut<Loader>,
-    task_pool: ResMut<AsyncComputeTaskPool>,
+    // task_pool: ResMut<AsyncComputeTaskPool>,
     mut aseassets: ResMut<Assets<AseAsset>>,
     asset_server: Res<AssetServer>,
     resources: AseAssetResources,
 ) {
+    let task_pool = AsyncComputeTaskPool::get();
     let pending = loader.pending_count();
     if pending > 0 {
         debug!("Processing asefiles (batches: {})", pending);

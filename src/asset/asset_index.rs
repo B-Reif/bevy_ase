@@ -119,7 +119,7 @@ impl AseAssetMap {
 ///
 /// ```
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Resource)]
 pub struct AseFileMap(pub(crate) HashMap<PathBuf, AseAssetMap>);
 impl AseFileMap {
     /// Returns the asset map for the file with the given path.
