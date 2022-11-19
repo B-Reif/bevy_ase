@@ -91,7 +91,7 @@
 /// [Slices](asset::slice::Slice), and [Tilesets](asset::Tileset). This module also provides
 /// map resources to access assets by keying with a file path and an asset name.
 pub mod asset;
-#[cfg(feature = "benimator")]
+
 /// Implements conversions from bevy_ase assets into benimator assets.
 ///
 /// Enabled by the "benimator" feature. Provides a [From] &[Animation](asset::Animation)
@@ -115,13 +115,8 @@ pub mod asset;
 ///     frame.into()   
 /// }
 /// ```
+#[cfg(feature = "benimator")]
 pub mod benimator;
-
-#[cfg(feature = "bevy_ecs_tilemap")]
-/// Implements conversions from bevy_ase assets into bevy_ecs_tilemap assets.
-///
-/// Adds the [layer_settings](asset::Tileset::layer_settings) method to [Tileset](asset::Tileset).
-pub mod bevy_ecs_tilemap;
 
 pub mod handle_id;
 /// Provides systems and resources for loading Aseprite files.
