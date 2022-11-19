@@ -11,7 +11,6 @@ impl From<&Frame> for benimator::Frame {
 }
 impl From<&Animation> for benimator::Animation {
     fn from(a: &Animation) -> Self {
-        let frames = a.frames().iter().map(|f| f.into()).collect();
-        benimator::Animation::from_frames(frames)
+        benimator::Animation::from_frames(a.frames().iter().map(|f| f.into()))
     }
 }
